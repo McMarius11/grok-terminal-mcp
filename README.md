@@ -185,6 +185,40 @@ In addition to Blockbench-specific helpers, `grok-terminal-mcp` now includes pow
 
 These tools are designed to be reusable across many kinds of projects (Godot addons, VSCode extensions, Electron apps, CLI tools, etc.).
 
+### Dynamic MCP Connections
+
+You can connect to other MCP servers **at runtime** (without editing your Grok config every time).
+
+This is especially useful for connecting to project-specific MCPs, such as the Blockbench MCP plugin.
+
+**Relevant tools:**
+- `mcp_connect` — Connect to an HTTP MCP server (e.g. Blockbench)
+- `mcp_connect_stdio` — Start and connect to a local stdio MCP
+- `mcp_list` — List currently connected MCP servers
+- `mcp_disconnect`
+- `mcp_list_tools` — See what tools a connected server offers
+- `mcp_call` — Call a tool on a connected server
+
+By default, only connections to `localhost` are allowed (for security).  
+You can enable remote connections with:
+
+```json
+"allowRemoteMcpConnections": true
+```
+
+in your `.grok-terminal.json`.
+
+Example: Connect to a running Blockbench MCP:
+```json
+{
+  "id": "blockbench",
+  "name": "Blockbench",
+  "url": "http://localhost:3000/bb-mcp"
+}
+```
+
+Then use `mcp_list_tools` and `mcp_call` to interact with it.
+
 Example usage for a generic project:
 ```json
 {

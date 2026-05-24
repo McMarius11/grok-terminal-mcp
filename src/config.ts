@@ -11,6 +11,7 @@ export interface TerminalConfig {
   maxBackgroundOutputBytes: number;
   defaultTimeoutMs: number;
   projectShortcuts: Record<string, string>;
+  allowRemoteMcpConnections?: boolean;   // New: allow connecting to remote MCP servers
   _loadedFrom?: string | null;
 }
 
@@ -34,6 +35,7 @@ const DEFAULT_CONFIG: TerminalConfig = {
     "test": "npm test",
     "verify:all": "npm run verify:all"
   },
+  allowRemoteMcpConnections: false,   // Default: only allow localhost MCP connections
   _loadedFrom: null
 };
 
@@ -100,6 +102,8 @@ function mergeWithDefaults(userConfig: any, loadedFrom: string): TerminalConfig 
     allowedCommands: [...DEFAULT_CONFIG.allowedCommands, ...(userConfig.allowedCommands || [])],
     blockedPatterns: [...DEFAULT_CONFIG.blockedPatterns, ...(userConfig.blockedPatterns || [])],
     projectShortcuts: { ...DEFAULT_CONFIG.projectShortcuts, ...(userConfig.projectShortcuts || {}) },
+    allowRemoteMcpConnections:
+      userConfig.allowRemoteMcpConnections ?? DEFAULT_CONFIG.allowRemoteMcpConnections,
     _loadedFrom: loadedFrom,
   };
 }

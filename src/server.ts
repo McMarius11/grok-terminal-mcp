@@ -65,6 +65,15 @@ import { startDevSession } from "./devSessionTools.js";
 
 import { gitCommit, gitCreateBranch, gitPush } from "./gitTools.js";
 
+import {
+  connectHttp,
+  connectStdio,
+  listConnections,
+  disconnect,
+  listTools as listRemoteTools,
+  callTool as callRemoteTool,
+} from "./mcpManager.js";
+
 import fs from "fs";
 import path from "path";
 
@@ -1011,6 +1020,119 @@ server.tool(
   async (args) => {
     const result = await gitPush({ setUpstream: args.setUpstream, config: currentConfig, cwd: args.cwd });
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+// ============================================
+// Dynamic MCP Connections (connect to other MCP servers at runtime)
+// ============================================
+
+server.tool(
+  "mcp_connect",
+  "Connect to a remote MCP server over HTTP/HTTPS (Streamable HTTP or SSE). Use this to dynamically add new capabilities (e.g. Blockbench MCP).",
+  {
+    id: z.string().describe("Unique ID for this connection (e.g. 'blockbench')"),
+    name: z.string().describe("Human readable name"),
+    url: z.string().describe("HTTP URL of the MCP server (e.g. http://localhost:3000/bb-mcp)"),
+    allowRemote: z.boolean().optional().describe("Allow connections to non-localhost servers (default: false)"),
+  },
+  async ({ id, name, url, allowRemote }) => {
+    logger.info(`Tool called: mcp_connect -> ${id} (${url})`);
+
+    const remoteAllowed =
+      allowRemote === true || currentConfig.allowRemoteMcpConnections === true;
+
+    try {
+      const info = await connectHttp({ id, name, url, allowRemote: remoteAllowed });
+      return {
+        content: [{ type: "text", text: JSON.stringify({ success: true, connection: info }) }],
+      };
+    } catch (err: any) {
+      return toolError(err.message || "Failed to connect to MCP server", "execution") as any;
+    }
+  }
+);
+
+server.tool(
+  "mcp_connect_stdio",
+  "Start and connect to a local stdio-based MCP server.",
+  {
+    id: z.string(),
+    name: z.string(),
+    command: z.string(),
+    args: z.array(z.string()).optional().default([]),
+    cwd: z.string().optional(),
+  },
+  async ({ id, name, command, args, cwd }) => {
+    logger.info(`Tool called: mcp_connect_stdio -> ${id}`);
+
+    try {
+      const info = await connectStdio({ id, name, command, args, cwd });
+      return {
+        content: [{ type: "text", text: JSON.stringify({ success: true, connection: info }) }],
+      };
+    } catch (err: any) {
+      return toolError(err.message || "Failed to start stdio MCP", "execution") as any;
+    }
+  }
+);
+
+server.tool(
+  "mcp_list",
+  "List all currently connected MCP servers (dynamically added).",
+  {},
+  async () => {
+    const servers = listConnections();
+    return { content: [{ type: "text", text: JSON.stringify(servers, null, 2) }] };
+  }
+);
+
+server.tool(
+  "mcp_disconnect",
+  "Disconnect from a previously connected MCP server.",
+  {
+    id: z.string(),
+  },
+  async ({ id }) => {
+    const success = await disconnect(id);
+    return {
+      content: [{ type: "text", text: JSON.stringify({ success, id }) }],
+    };
+  }
+);
+
+server.tool(
+  "mcp_list_tools",
+  "List available tools on a connected MCP server.",
+  {
+    id: z.string(),
+  },
+  async ({ id }) => {
+    try {
+      const tools = await listRemoteTools(id);
+      return { content: [{ type: "text", text: JSON.stringify(tools, null, 2) }] };
+    } catch (err: any) {
+      return toolError(err.message, "execution") as any;
+    }
+  }
+);
+
+server.tool(
+  "mcp_call",
+  "Call a tool on a connected MCP server.",
+  {
+    id: z.string().describe("ID of the connected MCP server"),
+    tool: z.string().describe("Name of the tool to call"),
+    args: z.record(z.any()).optional().default({}).describe("Arguments for the tool"),
+  },
+  async ({ id, tool, args }) => {
+    logger.info(`Tool called: mcp_call -> ${id}.${tool}`);
+    try {
+      const result = await callRemoteTool(id, tool, args);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err: any) {
+      return toolError(err.message || "Failed to call remote tool", "execution") as any;
+    }
   }
 );
 

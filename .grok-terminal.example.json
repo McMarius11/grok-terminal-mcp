@@ -36,5 +36,8 @@
     "bb:build": "bun run build",
     "bb:dev": "bun run dev",
     "bb:dev:watch": "bun run dev:watch"
-  }
+  },
+
+  "_mcpConnections": "Advanced: Allow the AI to dynamically connect to other MCP servers at runtime (e.g. the Blockbench MCP plugin). Default is false for security reasons.",
+  "allowRemoteMcpConnections": false
 }
