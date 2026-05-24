@@ -1,13 +1,15 @@
 # grok-terminal-mcp
 
-A clean, production-quality terminal and shell MCP server built with the official `@modelcontextprotocol/sdk`.
+A powerful, production-quality **terminal + structured filesystem + dev workflow MCP** built with the official `@modelcontextprotocol/sdk`.
 
-Works great with **any project** — not just one specific one.
+Designed as a **near-complete single MCP** for real software engineering work (replacing the need for separate terminal + filesystem MCPs in most cases).
 
-It is designed to be reliable, practical, and safe for real development work, with:
-- Strong support for long-running processes
-- Useful built-in general helpers + structured file tools (`edit_file` with diff preview, `search_files`, etc.)
-- Project-specific shortcuts via simple config
+It works great with **any project** and focuses on:
+- Reliable terminal execution + excellent long-running process support
+- High-quality structured file operations (including `edit_file` with dry-run diff preview)
+- Practical HTTP client for API work
+- Useful Git helpers + project automation tools
+- Simple but effective security model you fully control
 
 ## Why This Exists
 
@@ -18,12 +20,13 @@ Most existing terminal MCP servers have one or more of these problems:
 - Weak support for long-running processes and background tasks
 
 `grok-terminal-mcp` was built with a different philosophy:
-- Uses the official MCP SDK correctly and reliably
-- Pragmatic but explicit security (you stay in full control)
-- Excellent support for long-running and background processes
-- First-class **project shortcuts** — the feature that gives the biggest real-world productivity boost
+- Uses the official MCP SDK correctly and reliably (excellent handshake stability)
+- Pragmatic but explicit security model (you stay in full control via `.grok-terminal.json`)
+- Outstanding support for long-running processes, background tasks and watches
+- First-class structured file tools + HTTP client (reducing the need for multiple MCPs)
+- Simple but powerful **project shortcuts**
 
-It was originally created to give an AI agent reliable terminal control, but is designed as a general-purpose tool that works with any software project.
+It started as a stable terminal replacement but has evolved into a general-purpose development MCP that can handle the majority of day-to-day software engineering tasks on its own.
 
 ## Quick Start
 
@@ -76,17 +79,21 @@ npm run dev -- --debug
 | `run_script`            | Run package.json scripts (auto npm/yarn/pnpm/bun)                        |
 | `deps_outdated`         | Show outdated dependencies using the project's package manager           |
 | `project_info`          | Quick project overview (name, version, git, node, package manager...)    |
-| **Structured file tools** (inspired by official Filesystem MCP) | |
-| `read_text_file`        | Read file content with optional head/tail                                |
+| **Structured file tools** | |
+| `read_text_file`        | Read file content (with head/tail)                                       |
+| `read_multiple_files`   | Read many files in parallel                                              |
 | `write_file`            | Write/overwrite a file                                                   |
-| `edit_file`             | Precise multi-edit with `dryRun` diff preview (recommended for edits)    |
-| `search_files`          | Recursive **content** search with exclude patterns                       |
-| `find_files`            | Recursive **filename/glob** search (name-based, complements search_files)|
-| `list_directory`        | Structured directory listing (optional sizes)                            |
-| `directory_tree`        | Recursive tree view of a directory                                       |
-| `create_directory`      | Create directories recursively                                           |
-| `move_file`             | Move or rename files/directories                                         |
-| `get_file_info`         | Detailed metadata (size, timestamps, permissions, type)                  |
+| `edit_file`             | Best-in-class multi-edit with `dryRun` unified diff preview              |
+| `read_json` / `write_json` | Convenient JSON file handling                                         |
+| `search_files`          | Recursive content search                                                 |
+| `find_files`            | Glob-based filename/directory search                                     |
+| `list_directory`        | Clean directory listing (optional sizes)                                 |
+| `directory_tree`        | Recursive project tree                                                   |
+| `create_directory` / `move_file` / `get_file_info` | Standard FS operations              |
+| **HTTP & API**          | |
+| `http_request`          | Full-featured HTTP client (any method, JSON, headers, structured response) |
+| **Git**                 | |
+| `git_status` / `git_diff` / `git_log` / `git_show` / `git_commit` etc. | Practical git workflow tools |
 | **Project-specific** (via shortcuts in .grok-terminal.json) | |
 | `run_build` / `run_check_fast` / etc. | Whatever you define in your config |
 | **Bun + Blockbench dev tools (0.5.0+)** | |
