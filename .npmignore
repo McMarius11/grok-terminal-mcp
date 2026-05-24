@@ -1,0 +1,25 @@
+# Development files
+src/
+*.ts
+tsconfig.json
+test-handshake.js
+print-config.js
+example-config.toml
+
+# Development dependencies and lock
+node_modules/
+package-lock.json
+
+# Git and IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+
+# Documentation that is not needed in the package
+STANDALONE.md
+QUICKSTART.md
+
+# Misc
+.env
+*.log

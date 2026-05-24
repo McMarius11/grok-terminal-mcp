@@ -1,0 +1,37 @@
+{
+  "_comment": "Example configuration for grok-terminal-mcp. Copy this file to .grok-terminal.json in your project root and customize it.",
+
+  "_info": "This file controls security, timeouts, and project-specific shortcuts. The MCP will automatically find it.",
+
+  "allowedCommands": [
+    "npm", "node", "npx", "yarn", "pnpm", "bun",
+    "git", "bash", "sh", "python", "python3",
+    "ls", "cat", "echo", "find", "grep", "head", "tail", "wc",
+    "make", "docker", "podman"
+  ],
+
+  "blockedPatterns": [
+    "rm -rf /",
+    "curl | sh",
+    ":(){ :|:& };",
+    "mkfs",
+    "dd if=/dev/zero",
+    "> /dev/sda",
+    "shutdown",
+    "reboot",
+    "halt"
+  ],
+
+  "maxOutputBytes": 300000,
+  "maxBackgroundOutputBytes": 8388608,
+  "defaultTimeoutMs": 180000,
+
+  "projectShortcuts": {
+    "dev": "npm run dev",
+    "build": "npm run build",
+    "test": "npm test",
+    "lint": "npm run lint",
+    "typecheck": "npm run typecheck",
+    "clean": "rm -rf dist build .next"
+  }
+}

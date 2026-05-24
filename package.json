@@ -1,0 +1,68 @@
+{
+  "name": "grok-terminal-mcp",
+  "version": "0.3.0",
+  "description": "Production-quality terminal MCP server for Grok (and other MCP clients). Built with the official SDK. Excellent long-running process support, smart general-purpose helpers, project shortcuts, and strong configurable security. Works with any project.",
+  "type": "module",
+  "main": "dist/server.js",
+  "types": "dist/server.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/server.js",
+      "types": "./dist/server.d.ts"
+    }
+  },
+  "bin": {
+    "grok-terminal-mcp": "./bin/grok-terminal-mcp.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    ".grok-terminal.example.json"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/server.ts",
+    "start": "node dist/server.js",
+    "clean": "rm -rf dist",
+    "test": "node --import tsx --test tests/*.mjs",
+    "test:watch": "node --import tsx --test --watch tests/*.mjs",
+    "dev:from-root": "cd ../.. && tsx tools/grok-terminal-mcp/src/server.ts",
+    "dev:analyzer": "node ./bin/dev-analyzer.js",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "terminal",
+    "shell",
+    "grok",
+    "ai",
+    "developer-tools"
+  ],
+  "license": "MIT",
+  "author": "Marius Kamm",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/McMarius11/grok-terminal-mcp.git"
+  },
+  "homepage": "https://github.com/McMarius11/grok-terminal-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/McMarius11/grok-terminal-mcp/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "cac": "^7.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}
