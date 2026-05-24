@@ -13,9 +13,32 @@ import { executeCommand, startBackgroundProcess, normalizeForMcp, type Normalize
 import { processManager } from "./processManager.js";
 import { logger } from "./logger.js";
 import { parseCliArgs } from "./cli.js";
+import {
+  readTextFile,
+  writeFileContent,
+  applyEdits,
+  searchFiles,
+  type FileEdit,
+} from "./fileTools.js";
 
 import fs from "fs";
 import path from "path";
+
+/**
+ * Helper to register MCP tools while working around the extremely strict
+ * typing of the current @modelcontextprotocol/sdk.
+ *
+ * This centralizes the necessary `as any` casts in one place instead of
+ * polluting every tool registration.
+ */
+function registerTool(
+  name: string,
+  description: string,
+  schema: z.ZodObject<any> | Record<string, z.ZodTypeAny>,
+  handler: (args: any, extra?: any) => Promise<any> | any
+) {
+  (server as any).tool(name, description, schema, handler);
+}
 
 // ============================================
 // CLI Parsing (must happen very early)
@@ -335,7 +358,7 @@ server.tool(
   }
 );
 
-server.tool(
+registerTool(
   "run_check_fast",
   "Runs the fast project check (very useful for quick validation).",
   {},
@@ -345,7 +368,7 @@ server.tool(
   }
 );
 
-server.tool(
+registerTool(
   "run_verify_all",
   "Runs the full verification suite. Can take several minutes.",
   {
@@ -494,6 +517,108 @@ server.tool(
       // Many package managers return non-zero when there are outdated packages
       // So we still return the output even on error
       return toolError(err?.message || "Failed to check outdated dependencies", "execution") as any;
+    }
+  }
+);
+
+// ============================================
+// Structured File Tools (inspired by official Filesystem MCP)
+// These provide precise, AI-friendly file operations that are hard to do
+// elegantly with raw shell commands.
+// ============================================
+
+const ReadTextFileSchema = z.object({
+  path: z.string().describe("Path to the file to read"),
+  head: z.number().optional().describe("Return only the first N lines"),
+  tail: z.number().optional().describe("Return only the last N lines"),
+});
+
+registerTool(
+  "read_text_file",
+  "Read the contents of a text file. Supports head/tail for large files. This is more precise than shell commands for reading specific parts of files.",
+  ReadTextFileSchema,
+  async (args: any, extra?: any) => {
+    logger.info(`Tool called: read_text_file -> ${args.path}`);
+    try {
+      const content = await readTextFile(args.path, args.head, args.tail);
+      return {
+        content: [{ type: "text", text: content }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to read file", "execution") as any;
+    }
+  }
+);
+
+const WriteFileSchema = z.object({
+  path: z.string().describe("Path to the file to write"),
+  content: z.string().describe("Content to write to the file"),
+});
+
+registerTool(
+  "write_file",
+  "Write content to a file (overwrites existing content). Use with caution — consider edit_file for modifications.",
+  WriteFileSchema,
+  async (args: any, extra?: any) => {
+    logger.info(`Tool called: write_file -> ${args.path}`);
+    try {
+      await writeFileContent(args.path, args.content);
+      return {
+        content: [{ type: "text", text: `Successfully wrote ${args.content.length} characters to ${args.path}` }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to write file", "execution") as any;
+    }
+  }
+);
+
+const EditOperationSchema = z.object({
+  oldText: z.string().describe("Text to search for (must match exactly)"),
+  newText: z.string().describe("Text to replace it with"),
+});
+
+const EditFileSchema = z.object({
+  path: z.string().describe("Path to the file to edit"),
+  edits: z.array(EditOperationSchema).describe("List of edits to apply sequentially"),
+  dryRun: z.boolean().optional().default(false).describe("If true, returns a unified diff preview instead of applying changes"),
+});
+
+registerTool(
+  "edit_file",
+  "The most powerful file editing tool. Apply precise text replacements. Use dryRun=true to preview changes as a git-style unified diff. This is the recommended way to modify source files.",
+  EditFileSchema,
+  async (args: any, extra?: any) => {
+    logger.info(`Tool called: edit_file -> ${args.path} (dryRun=${args.dryRun})`);
+    try {
+      const result = await applyEdits(args.path, args.edits as any, args.dryRun, extra?.signal);
+      return {
+        content: [{ type: "text", text: result }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to edit file", "execution") as any;
+    }
+  }
+);
+
+const SearchFilesSchema = z.object({
+  path: z.string().describe("Root directory to search in"),
+  pattern: z.string().describe("Text pattern to search for inside files"),
+  excludePatterns: z.array(z.string()).optional().default([]).describe("Glob patterns to exclude (e.g. node_modules/**, *.log)"),
+});
+
+registerTool(
+  "search_files",
+  "Recursively search for a text pattern inside files. Much more convenient than manual grep for complex searches.",
+  SearchFilesSchema,
+  async (args: any, extra?: any) => {
+    logger.info(`Tool called: search_files -> ${args.path}`);
+    try {
+      const results = await searchFiles(args.path, args.pattern, args.excludePatterns);
+      return {
+        content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to search files", "execution") as any;
     }
   }
 );

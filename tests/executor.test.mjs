@@ -1,6 +1,7 @@
 // Basic tests for the executor module
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
+import fs from 'node:fs/promises';
 import { executeCommand } from '../src/executor.ts';
 import { loadConfig } from '../src/config.ts';
 
@@ -133,5 +134,72 @@ describe('Output Normalization', () => {
     // Should contain beginning and end
     assert.ok(result.text.startsWith('LINE'));
     assert.ok(result.text.endsWith('LINE\n'));
+  });
+});
+
+// ============================================
+// Tests for new Structured File Tools
+// ============================================
+
+import {
+  applyEdits,
+  readTextFile,
+  writeFileContent,
+  searchFiles,
+} from '../src/fileTools.ts';
+
+import os from 'os';
+import path from 'path';
+
+describe('Structured File Tools (basic)', () => {
+  it('readTextFile should read full content', async () => {
+    const filePath = path.join(os.tmpdir(), `read-test-${Date.now()}.txt`);
+    await fs.writeFile(filePath, 'hello\nworld');
+    const content = await readTextFile(filePath);
+    assert.ok(content.includes('hello'));
+    await fs.unlink(filePath);
+  });
+
+  it('applyEdits should apply simple replacement', async () => {
+    const filePath = path.join(os.tmpdir(), `edit-test-${Date.now()}.txt`);
+    await fs.writeFile(filePath, 'hello world');
+    await applyEdits(filePath, [
+      { oldText: 'hello world', newText: 'hello universe' }
+    ]);
+    const newContent = await fs.readFile(filePath, 'utf8');
+    assert.equal(newContent.trim(), 'hello universe');
+    await fs.unlink(filePath);
+  });
+
+  it('searchFiles should find pattern', async () => {
+    const dir = path.join(os.tmpdir(), `search-test-${Date.now()}`);
+    await fs.mkdir(dir);
+    const file1 = path.join(dir, 'a.txt');
+    await fs.writeFile(file1, 'foo bar');
+
+    const results = await searchFiles(dir, 'foo');
+    assert.ok(results.length >= 1);
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+});
+
+// ============================================
+// Cancellation Tests
+// ============================================
+
+describe('Cancellation (basic)', () => {
+  it('applyEdits should throw on aborted signal', async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    const filePath = path.join(os.tmpdir(), `cancel-test-${Date.now()}.txt`);
+    await fs.writeFile(filePath, 'test');
+
+    await assert.rejects(
+      async () => await applyEdits(filePath, [{ oldText: 'test', newText: 'changed' }], false, controller.signal),
+      /cancelled/i
+    );
+
+    await fs.unlink(filePath);
   });
 });
