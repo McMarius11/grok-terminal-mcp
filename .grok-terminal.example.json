@@ -5,7 +5,7 @@
 
   "allowedCommands": [
     "npm", "node", "npx", "yarn", "pnpm", "bun",
-    "git", "bash", "sh", "python", "python3",
+    "git", "bash", "sh", "python", "python3", "curl", "unzip", "chmod", "cp", "mv",
     "ls", "cat", "echo", "find", "grep", "head", "tail", "wc",
     "make", "docker", "podman"
   ],
@@ -32,6 +32,9 @@
     "test": "npm test",
     "lint": "npm run lint",
     "typecheck": "npm run typecheck",
-    "clean": "rm -rf dist build .next"
+    "clean": "rm -rf dist build .next",
+    "bb:build": "bun run build",
+    "bb:dev": "bun run dev",
+    "bb:dev:watch": "bun run dev:watch"
   }
 }

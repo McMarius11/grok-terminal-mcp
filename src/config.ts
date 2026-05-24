@@ -16,7 +16,8 @@ export interface TerminalConfig {
 
 const DEFAULT_CONFIG: TerminalConfig = {
   allowedCommands: [
-    "npm", "node", "npx", "bash", "sh", "git", "python3", "python",
+    "npm", "node", "npx", "yarn", "pnpm", "bun",
+    "bash", "sh", "git", "python3", "python", "curl", "unzip", "chmod", "cp", "mv",
     "ls", "cat", "echo", "find", "grep", "timeout", "wc", "head", "tail", "make"
   ],
   blockedPatterns: [

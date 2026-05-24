@@ -83,6 +83,12 @@ npm run dev -- --debug
 | `search_files`          | Recursive content search with exclude patterns                           |
 | **Project-specific** (via shortcuts in .grok-terminal.json) | |
 | `run_build` / `run_check_fast` / etc. | Whatever you define in your config |
+| **Bun + Blockbench dev tools (0.5.0+)** | |
+| `ensure_bun` / `get_bun_info` | Bootstrap or inspect Bun (the runtime used by blockbench-mcp-plugin builds) |
+| `find_blockbench` / `get_blockbench_plugins_dir` | Discover Blockbench + its plugins folder (Linux/macOS/Windows) |
+| `install_blockbench_plugin` | Copy a built `dist/mcp.js` into Blockbench's user plugins dir |
+| `build_and_install_blockbench_plugin` | **One-shot**: ensure Bun → build the plugin → install it (the #1 tool for fast iteration) |
+| `list_blockbench_plugins` | Verify what is currently installed in Blockbench |
 
 ## Configuration
 
@@ -135,6 +141,63 @@ When `dryRun: true`, it returns a clean unified diff so you (or the agent) can r
 This is currently the cleanest way to make safe, reviewable source changes.
 
 Other available tools: `read_text_file` (with head/tail), `write_file`, `search_files`.
+
+## Bun + Blockbench MCP Plugin Development (Recommended Pairing)
+
+`grok-terminal-mcp` + the [blockbench-mcp-plugin](https://github.com/McMarius11/blockbench-mcp-plugin) form a perfect complementary pair:
+
+- **grok-terminal-mcp** (this project) = host dev environment power (Bun bootstrap, builds, filesystem, long-running processes, Blockbench plugin *installation*).
+- **blockbench-mcp-plugin** (the other repo) = in-Blockbench control (modeling, UV, silent export, `install_plugin_from_path` for hot-reload, 60-minute sessions, etc.).
+
+### The Fastest Possible Dev Loop (as an AI agent)
+
+After changing any code in your `blockbench_mcp` checkout:
+
+1. Call `build_and_install_blockbench_plugin` with `projectDir` pointing at the checkout.
+2. The tool ensures Bun (installs it on first use if needed), runs the full Bun build, and drops the fresh `mcp.js` into your Blockbench plugins folder.
+3. Inside a running Blockbench that already has the MCP plugin loaded, call its `install_plugin_from_path` (or simply "Reload Plugins" in the Blockbench menu / restart Blockbench).
+
+One tool call → fully updated plugin in Blockbench. Zero manual steps.
+
+Example (the AI will figure out the path from context or you can pass it explicitly):
+
+```json
+{
+  "projectDir": "/home/you/Gamedev/grok/blockbench_mcp"
+}
+```
+
+## General Development Tools (usable for any project)
+
+In addition to Blockbench-specific helpers, `grok-terminal-mcp` now includes powerful **general-purpose** tools for AI-driven development:
+
+### Core Capabilities
+
+| Tool                    | Purpose |
+|-------------------------|---------|
+| `ensure_runtime` / `get_runtime_info` | Install and inspect runtimes (Bun, Node, ...) |
+| `install_artifact`      | Copy built artifacts into any target directory |
+| `start_watch`           | Watch a folder and run commands on change |
+| `start_dev_session`     | One-call smart dev loop (watch + build + optional install) |
+| `dev_status`            | Quick health check of current environment (runtimes, watches, git, processes) |
+| `find_executable` / `launch_app` / `is_app_running` | General app discovery and control |
+| `git_commit` / `git_create_branch` / `git_push` | Clean git workflow helpers |
+
+These tools are designed to be reusable across many kinds of projects (Godot addons, VSCode extensions, Electron apps, CLI tools, etc.).
+
+Example usage for a generic project:
+```json
+{
+  "projectDir": "/path/to/my-project",
+  "buildCommand": "bun run build",
+  "installCommand": "bun run install:plugin"
+}
+```
+Then call `start_dev_session`.
+
+You can also use the lower-level tools (`ensure_bun` → `bun` aware commands via `run_script` or `run_command` → `install_blockbench_plugin`) if you need more control.
+
+See the source of `bunTools.ts` and `blockbenchTools.ts` for exact behavior and platform paths.
 
 ## Development
 

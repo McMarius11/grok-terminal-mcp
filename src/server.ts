@@ -21,23 +21,69 @@ import {
   type FileEdit,
 } from "./fileTools.js";
 
+import {
+  getBunInfo,
+  ensureBunInstalled,
+  getBunCommand,
+} from "./bunTools.js";
+
+import {
+  getRuntimeInfo,
+  ensureRuntime,
+  getRuntimeCommand,
+  type Runtime,
+} from "./runtimes.js";
+
+import {
+  findBlockbench,
+  getBlockbenchPluginsDir,
+  installBlockbenchPlugin,
+  buildAndInstallBlockbenchPlugin,
+  listBlockbenchPlugins,
+} from "./blockbenchTools.js";
+
+import {
+  installArtifact,
+  findCommonPluginsDir,
+} from "./artifactTools.js";
+
+import {
+  startWatch,
+  stopWatch,
+  listWatches,
+} from "./watchTools.js";
+
+import {
+  findExecutable,
+  launchApp,
+  isAppRunning,
+} from "./appTools.js";
+
+import { getDevStatus } from "./healthTools.js";
+
+import { startDevSession } from "./devSessionTools.js";
+
+import { gitCommit, gitCreateBranch, gitPush } from "./gitTools.js";
+
 import fs from "fs";
 import path from "path";
 
 /**
- * Helper to register MCP tools while working around the extremely strict
- * typing of the current @modelcontextprotocol/sdk.
+ * Helper to register MCP tools using the recommended registerTool API
+ * (the .tool() overloads are deprecated in SDK >=1.29).
  *
- * This centralizes the necessary `as any` casts in one place instead of
- * polluting every tool registration.
+ * Centralizes the casts so the rest of the file stays readable.
  */
 function registerTool(
   name: string,
   description: string,
-  schema: z.ZodObject<any> | Record<string, z.ZodTypeAny>,
+  schema: z.ZodObject<any> | Record<string, z.ZodTypeAny> | undefined,
   handler: (args: any, extra?: any) => Promise<any> | any
 ) {
-  (server as any).tool(name, description, schema, handler);
+  server.registerTool(name, {
+    description,
+    inputSchema: schema as any,
+  }, handler as any);
 }
 
 // ============================================
@@ -101,7 +147,7 @@ function toolError(
   };
 }
 
-logger.info(`grok-terminal-mcp v0.3.0 (SDK) starting...`);
+logger.info(`grok-terminal-mcp v0.5.0 (SDK) starting...`);
 logger.info(`Working directory: ${ROOT}`);
 logger.info(`Config loaded from: ${currentConfig._loadedFrom || "defaults only"}`);
 logger.info(`Allowed base commands: ${currentConfig.allowedCommands.length} | Shortcuts: ${Object.keys(currentConfig.projectShortcuts).length}`);
@@ -112,7 +158,7 @@ logger.info(`Allowed base commands: ${currentConfig.allowedCommands.length} | Sh
 
 const server = new McpServer({
   name: "grok-terminal-mcp",
-  version: "0.3.0",
+  version: "0.5.0",
 });
 
 // ============================================
@@ -395,11 +441,13 @@ server.tool(
 // These are always available and do not require shortcuts in .grok-terminal.json
 // ============================================
 
-/** Detects the package manager used in the current directory */
+/** Detects the package manager used in the current directory (updated for modern bun.lock) */
 function detectPackageManager(cwd: string): { cmd: string; name: string } {
   if (fs.existsSync(path.join(cwd, 'yarn.lock'))) return { cmd: 'yarn', name: 'yarn' };
   if (fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'))) return { cmd: 'pnpm', name: 'pnpm' };
-  if (fs.existsSync(path.join(cwd, 'bun.lockb'))) return { cmd: 'bun', name: 'bun' };
+  if (fs.existsSync(path.join(cwd, 'bun.lock')) || fs.existsSync(path.join(cwd, 'bun.lockb'))) {
+    return { cmd: 'bun', name: 'bun' };
+  }
   return { cmd: 'npm', name: 'npm' };
 }
 
@@ -703,6 +751,392 @@ server.tool(
     return {
       content: [{ type: "text", text: JSON.stringify(info, null, 2) }],
     };
+  }
+);
+
+// ============================================
+// General Runtime Tools (Bun, Node, future runtimes)
+// These are the foundation for reliable development across many projects.
+// ============================================
+
+server.tool(
+  "get_runtime_info",
+  "Returns information about a runtime (bun, node, ...). General purpose, works for any project.",
+  {
+    runtime: z.enum(["bun", "node"]).describe("The runtime to check"),
+  },
+  async ({ runtime }) => {
+    logger.info(`Tool called: get_runtime_info -> ${runtime}`);
+    const info = await getRuntimeInfo(runtime as Runtime);
+    return { content: [{ type: "text", text: JSON.stringify(info, null, 2) }] };
+  }
+);
+
+server.tool(
+  "ensure_runtime",
+  "Ensures a runtime (currently best support for 'bun') is installed and available. General purpose tool.",
+  {
+    runtime: z.enum(["bun", "node"]).describe("Runtime to ensure"),
+    timeoutMs: z.number().optional().describe("Timeout for installation (default 180s)"),
+  },
+  async ({ runtime, timeoutMs }, extra?: any) => {
+    logger.info(`Tool called: ensure_runtime -> ${runtime}`);
+    try {
+      const result = await ensureRuntime(runtime as Runtime, { timeoutMs });
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to ensure runtime", "execution") as any;
+    }
+  }
+);
+
+// ============================================
+// General Artifact Installation (reusable across projects)
+// ============================================
+
+server.tool(
+  "install_artifact",
+  "General tool to install/copy a built artifact (file or folder) into a target directory. Usable for plugins, extensions, binaries, etc. across many applications.",
+  {
+    source: z.string().describe("Path to the built file or directory"),
+    target: z.string().describe("Destination directory"),
+    name: z.string().optional().describe("Optional new name for the artifact"),
+    strategy: z.enum(["copy", "symlink"]).optional().default("copy"),
+  },
+  async (args) => {
+    logger.info(`Tool called: install_artifact -> ${args.source} → ${args.target}`);
+    try {
+      const result = await installArtifact(args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        isError: !result.success,
+      } as any;
+    } catch (err: any) {
+      return toolError(err?.message || "Artifact installation failed", "execution") as any;
+    }
+  }
+);
+
+registerTool(
+  "find_common_plugins_dir",
+  "Finds common plugin/extension directories for various apps (Blockbench, VSCode, Godot, etc.). General helper.",
+  {
+    appHint: z.string().optional().describe("Hint like 'blockbench', 'vscode', 'godot'"),
+  },
+  async ({ appHint }) => {
+    logger.info(`Tool called: find_common_plugins_dir -> ${appHint || "generic"}`);
+    const dir = findCommonPluginsDir(appHint);
+    return { content: [{ type: "text", text: JSON.stringify({ directory: dir }, null, 2) }] };
+  }
+);
+
+// ============================================
+// General Watch + Action (for dev loops: rebuild + reinstall, test on save, etc.)
+// ============================================
+
+server.tool(
+  "start_watch",
+  "Starts a file watcher on a directory. On changes, runs the given command (with debounce). General purpose for any dev loop.",
+  {
+    path: z.string().describe("Directory to watch"),
+    command: z.string().describe("Command to run when files change"),
+    debounceMs: z.number().optional().default(750).describe("Debounce time in ms"),
+    ignorePatterns: z.array(z.string()).optional().describe("Patterns to ignore (e.g. node_modules, dist)"),
+  },
+  async (args, extra) => {
+    logger.info(`Tool called: start_watch on ${args.path}`);
+    try {
+      const result = await startWatch(args.path, args.command, {
+        debounceMs: args.debounceMs,
+        ignorePatterns: args.ignorePatterns,
+        config: currentConfig,
+      });
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to start watch", "execution") as any;
+    }
+  }
+);
+
+registerTool(
+  "list_watches",
+  "Lists all currently active file watchers started with start_watch.",
+  {},
+  async () => {
+    logger.info("Tool called: list_watches");
+    const watches = listWatches();
+    return { content: [{ type: "text", text: JSON.stringify({ watches }, null, 2) }] };
+  }
+);
+
+server.tool(
+  "stop_watch",
+  "Stops a previously started watch session.",
+  {
+    sessionId: z.string(),
+  },
+  async ({ sessionId }) => {
+    logger.info(`Tool called: stop_watch -> ${sessionId}`);
+    const result = stopWatch(sessionId);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      isError: !result.success,
+    } as any;
+  }
+);
+
+// ============================================
+// General App Launch & Status Tools
+// Useful for desktop/GUI applications (Blockbench, Godot, VSCode, Electron apps, etc.)
+// ============================================
+
+server.tool(
+  "find_executable",
+  "Tries to find an application executable or AppImage by name hint. General purpose across many programs.",
+  {
+    hint: z.string().describe("Name or hint of the app (e.g. 'blockbench', 'godot', 'myapp')"),
+  },
+  async ({ hint }) => {
+    logger.info(`Tool called: find_executable -> ${hint}`);
+    const result = await findExecutable(hint);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "launch_app",
+  "Launches a desktop application (especially good for AppImages and GUI programs). Returns immediately.",
+  {
+    executable: z.string().describe("Full path to the executable or AppImage"),
+    args: z.array(z.string()).optional().default([]),
+  },
+  async ({ executable, args }) => {
+    logger.info(`Tool called: launch_app -> ${executable}`);
+    const result = launchApp(executable, args);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      isError: !result.success,
+    } as any;
+  }
+);
+
+server.tool(
+  "is_app_running",
+  "Checks whether an application is currently running by name.",
+  {
+    name: z.string().describe("Process name or hint (e.g. 'blockbench', 'godot')"),
+  },
+  async ({ name }) => {
+    logger.info(`Tool called: is_app_running -> ${name}`);
+    const result = await isAppRunning(name);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+// General Environment Health Check
+server.tool(
+  "dev_status",
+  "Gives a quick, structured overview of the current development environment (runtimes, watches, git, processes). Very useful for the AI to orient itself.",
+  {},
+  async () => {
+    logger.info("Tool called: dev_status");
+    const status = await getDevStatus(currentConfig);
+    return { content: [{ type: "text", text: JSON.stringify(status, null, 2) }] };
+  }
+);
+
+// Smart Dev Session (one-call dev loop setup)
+server.tool(
+  "start_dev_session",
+  "Starts a smart development session: watches a project and runs build (+ optional install) on changes. General purpose.",
+  {
+    projectDir: z.string(),
+    buildCommand: z.string(),
+    installCommand: z.string().optional(),
+  },
+  async (args) => {
+    logger.info(`Tool called: start_dev_session in ${args.projectDir}`);
+    try {
+      const result = await startDevSession({
+        ...args,
+        config: currentConfig,
+      });
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to start dev session", "execution") as any;
+    }
+  }
+);
+
+// General Git Workflow Helpers
+server.tool(
+  "git_commit",
+  "Creates a git commit. Supports auto-adding all changes.",
+  {
+    message: z.string(),
+    addAll: z.boolean().optional().default(true),
+    cwd: z.string().optional(),
+  },
+  async (args) => {
+    const result = await gitCommit(args.message, { addAll: args.addAll, config: currentConfig, cwd: args.cwd });
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "git_create_branch",
+  "Creates and optionally checks out a new git branch.",
+  {
+    name: z.string(),
+    checkout: z.boolean().optional().default(true),
+    cwd: z.string().optional(),
+  },
+  async (args) => {
+    const result = await gitCreateBranch(args.name, { checkout: args.checkout, config: currentConfig, cwd: args.cwd });
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "git_push",
+  "Pushes current branch (with --set-upstream by default for safety).",
+  {
+    setUpstream: z.boolean().optional().default(true),
+    cwd: z.string().optional(),
+  },
+  async (args) => {
+    const result = await gitPush({ setUpstream: args.setUpstream, config: currentConfig, cwd: args.cwd });
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+// ============================================
+// Bun + Blockbench dev workflow tools (the reason this fork/extension exists)
+// These give the AI full autonomy for building and hot-installing the Blockbench
+// MCP plugin even when Bun is not pre-installed on the host.
+// ============================================
+
+// --- ensure_bun ---
+server.tool(
+  "ensure_bun",
+  "Ensures Bun (the JavaScript runtime) is installed and available. If missing, performs a controlled installation using the official installer. Critical for Blockbench plugin development (the blockbench-mcp-plugin uses Bun for its build).",
+  {
+    timeoutMs: z.number().optional().describe("Max time for install attempt (default 180s)"),
+  },
+  async ({ timeoutMs }, extra?: any) => {
+    logger.info("Tool called: ensure_bun");
+    try {
+      const result = await ensureBunInstalled({ timeoutMs });
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Bun ensure failed", "execution") as any;
+    }
+  }
+);
+
+// --- get_bun_info ---
+registerTool(
+  "get_bun_info",
+  "Reports whether Bun is available, the full path to the binary, version, and detection source. No side effects.",
+  {},
+  async () => {
+    logger.info("Tool called: get_bun_info");
+    const info = await getBunInfo();
+    return { content: [{ type: "text", text: JSON.stringify(info, null, 2) }] };
+  }
+);
+
+// --- find_blockbench ---
+server.tool(
+  "find_blockbench",
+  "Discovers Blockbench installation (executable) and the user plugins directory (cross-platform). Returns recommended locations for manual or automated plugin installation. Use the returned pluginsDir for install_blockbench_plugin.",
+  {
+    overridePluginsDir: z.string().optional().describe("Force a specific plugins directory instead of auto-detection"),
+  },
+  async ({ overridePluginsDir }) => {
+    logger.info("Tool called: find_blockbench");
+    const loc = await findBlockbench(overridePluginsDir);
+    return { content: [{ type: "text", text: JSON.stringify(loc, null, 2) }] };
+  }
+);
+
+// --- get_blockbench_plugins_dir ---
+registerTool(
+  "get_blockbench_plugins_dir",
+  "Returns (and creates if necessary) the Blockbench plugins directory for the current platform. This is where you copy the built mcp.js for a persistent install.",
+  {
+    override: z.string().optional(),
+  },
+  async ({ override }) => {
+    logger.info("Tool called: get_blockbench_plugins_dir");
+    const res = await getBlockbenchPluginsDir(override);
+    return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+  }
+);
+
+// --- install_blockbench_plugin ---
+server.tool(
+  "install_blockbench_plugin",
+  "Copies a built Blockbench plugin (usually dist/mcp.js from the blockbench-mcp-plugin project) into the Blockbench user plugins directory. This makes the plugin available after restarting Blockbench or reloading plugins. Pairs perfectly with the inner `install_plugin_from_path` tool once the MCP plugin is running inside Blockbench.",
+  {
+    source: z.string().describe("Path to the built mcp.js OR the dist/ folder containing it (e.g. /path/to/blockbench_mcp/dist)"),
+    targetDir: z.string().optional().describe("Target plugins directory (auto-detected if omitted)"),
+    pluginFilename: z.string().optional().default("mcp.js").describe("Filename to use inside the plugins dir"),
+  },
+  async (args, extra?: any) => {
+    logger.info(`Tool called: install_blockbench_plugin -> ${args.source}`);
+    try {
+      const result = await installBlockbenchPlugin(args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        isError: !result.success,
+      } as any;
+    } catch (err: any) {
+      return toolError(err?.message || "Plugin install failed", "execution") as any;
+    }
+  }
+);
+
+// --- build_and_install_blockbench_plugin (the killer feature) ---
+server.tool(
+  "build_and_install_blockbench_plugin",
+  "THE most powerful one-shot tool for Blockbench MCP development: ensures Bun, runs `bun run build` in the given blockbench-mcp-plugin checkout, then installs the resulting dist/mcp.js into your Blockbench plugins folder. Use this after every source change for instant iteration. Returns full build log + install status.",
+  {
+    projectDir: z.string().optional().describe("Path to the blockbench-mcp-plugin source root (the folder with package.json + build/ + index.ts). Defaults to current working dir."),
+    targetPluginsDir: z.string().optional(),
+    pluginFilename: z.string().optional(),
+  },
+  async (args, extra?: any) => {
+    logger.info("Tool called: build_and_install_blockbench_plugin");
+    try {
+      const result = await buildAndInstallBlockbenchPlugin(args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        isError: !result.success,
+      } as any;
+    } catch (err: any) {
+      return toolError(err?.message || "Build+install failed", "execution") as any;
+    }
+  }
+);
+
+// --- list_blockbench_plugins ---
+registerTool(
+  "list_blockbench_plugins",
+  "Lists all .js plugins currently present in the Blockbench plugins directory. Useful to verify that your mcp.js (or blockbench-mcp.js) landed correctly after an install.",
+  {
+    targetDir: z.string().optional(),
+  },
+  async ({ targetDir }) => {
+    logger.info("Tool called: list_blockbench_plugins");
+    const res = await listBlockbenchPlugins(targetDir);
+    return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
   }
 );
 

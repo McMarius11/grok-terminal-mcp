@@ -2,6 +2,32 @@
 
 All notable changes to grok-terminal-mcp will be documented in this file.
 
+## [0.5.0] - 2026-05-25
+
+### Added — Bun + Blockbench MCP Plugin Development Superpowers
+The primary motivation for this release: give the AI (Grok + any MCP client) **complete autonomy** to develop, build, and install the companion [blockbench-mcp-plugin](https://github.com/McMarius11/blockbench-mcp-plugin) without manual intervention, even when Bun is not pre-installed on the machine.
+
+- **Bun management** (new dedicated module):
+  - `ensure_bun` — checks all standard locations + `BUN_INSTALL`; if missing, runs the *official* `bun.sh` installer in a fully controlled way (inside the MCP process, never exposed as raw user command). Respects timeouts.
+  - `get_bun_info` — reports exact binary path, version, and detection source.
+  - `getBunCommand()` helper used internally by other tools so `bun run ...` always works reliably.
+- **Blockbench discovery & installation tools**:
+  - `find_blockbench` — locates the Blockbench executable (AppImage, flatpak, native, macOS/Windows paths) and the canonical user plugins directory cross-platform.
+  - `get_blockbench_plugins_dir` — returns (and auto-creates) the plugins folder.
+  - `install_blockbench_plugin` — robust copy of `dist/mcp.js` (+ icon/about.md) into the plugins dir.
+  - `build_and_install_blockbench_plugin` — **the killer one-shot**: ensures Bun → `bun run build` in your blockbench-mcp checkout → automatic install of the fresh artifact. Perfect after any source edit.
+  - `list_blockbench_plugins` — quick verification of what landed in the plugins folder.
+- Updated `detectPackageManager` to recognize the modern `bun.lock` (in addition to the legacy `bun.lockb`).
+- Expanded default + example `allowedCommands` with `bun`, `curl`, `unzip`, `cp`, `mv`, `chmod` (safe for the new controlled workflows).
+- Added ready-to-use projectShortcuts in the example config: `bb:build`, `bb:dev`, `bb:dev:watch`.
+- Full documentation updates (README + this changelog).
+
+These tools complement the domain-specific `blockbench-mcp-plugin` (silent ops, hot-reload via `install_plugin_from_path`, mesh/UV/workflow tools). Use both MCP servers together for maximum agentic power.
+
+### Changed
+- Version bumped to 0.5.0.
+- Minor hardening of allowed commands for real-world dev (still fully user-configurable via `.grok-terminal.json`).
+
 ## [0.4.0] - 2026-05-24
 
 ### Added
