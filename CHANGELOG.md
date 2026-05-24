@@ -2,6 +2,24 @@
 
 All notable changes to grok-terminal-mcp will be documented in this file.
 
+## [0.4.0] - 2026-05-24
+
+### Added
+- **General-purpose helpers** (work in any project, no config required):
+  - `git_status`
+  - `list_scripts`
+  - `run_script` (auto-detects npm/yarn/pnpm/bun)
+  - `project_info`
+- Basic tool call cancellation support (AbortSignal wired through run_command)
+- Real working `reload_config` implementation
+- `cancelled` flag in responses
+- `.grok-terminal.example.json` for easy onboarding
+
+### Changed
+- Better output truncation with head+tail + clear `truncated` + `totalBytes` information
+- Much improved error messages and tips
+- Tool is positioned as a general-purpose terminal MCP (not tied to any specific project)
+
 ## [0.2.0] - 2026-05-24
 
 ### Added
@@ -10,7 +28,7 @@ All notable changes to grok-terminal-mcp will be documented in this file.
 - `get_config` tool to inspect current settings
 - `reload_config` tool (reload without restarting the MCP)
 - Much better command logging (shows resolved shortcuts)
-- Real `.grok-terminal.json` in PanOS-Analyzer project root with good defaults
+- Real `.grok-terminal.json` support with good defaults for any project
 - Example config file (`.grok-terminal.example.json`)
 
 ### Changed
@@ -32,4 +50,4 @@ All notable changes to grok-terminal-mcp will be documented in this file.
 - `test-handshake.js` for debugging
 - First documentation and Quickstart guide
 
-Initial version extracted from development work on the PanOS-Analyzer project.
+Initial public standalone release.

@@ -1,6 +1,6 @@
 {
   "name": "grok-terminal-mcp",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Production-quality terminal MCP server for Grok (and other MCP clients). Built with the official SDK. Excellent long-running process support, smart general-purpose helpers, project shortcuts, and strong configurable security. Works with any project.",
   "type": "module",
   "main": "dist/server.js",
@@ -28,8 +28,6 @@
     "clean": "rm -rf dist",
     "test": "node --import tsx --test tests/*.mjs",
     "test:watch": "node --import tsx --test --watch tests/*.mjs",
-    "dev:from-root": "cd ../.. && tsx tools/grok-terminal-mcp/src/server.ts",
-    "dev:analyzer": "node ./bin/dev-analyzer.js",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build"
   },

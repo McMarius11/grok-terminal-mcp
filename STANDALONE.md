@@ -1,6 +1,6 @@
 # Using grok-terminal-mcp in Other Projects
 
-This document explains how to use `grok-terminal-mcp` outside of the PanOS-Analyzer project.
+This document explains how to use `grok-terminal-mcp` as a standalone tool in any project.
 
 ## Quick Setup
 

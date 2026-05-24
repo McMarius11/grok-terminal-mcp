@@ -1,9 +1,0 @@
-# Example entry for ~/.grok/config.toml
-# Copy and adjust the path!
-
-[mcp_servers.grok-terminal]
-command = "node"
-args = ["/home/YOUR_USER/path/to/PanOS-Analyzer-main/tools/grok-terminal-mcp/server.js"]
-
-# Optional: increase startup timeout if needed
-# startup_timeout_sec = 10

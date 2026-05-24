@@ -23,6 +23,7 @@ export interface ExecuteResult {
   exitCode: number;
   durationMs: number;
   command: string;
+  cancelled?: boolean;
 }
 
 /**
@@ -62,13 +63,16 @@ export async function executeCommand(
       command: resolvedCommand,
     };
   } catch (err: any) {
+    const isAbort = err.name === 'AbortError' || err.code === 'ABORT_ERR' || err.code === 'ERR_ABORTED';
+
     return {
       stdout: err.stdout || "",
       stderr: err.stderr || err.message || "",
-      exitCode: err.code ?? 1,
+      exitCode: isAbort ? 130 : (err.code ?? 1),   // 130 is conventional for SIGINT / cancelled
       durationMs: Date.now() - start,
       command: resolvedCommand,
-    };
+      cancelled: isAbort,
+    } as any;  // extend interface temporarily
   }
 }
 
@@ -173,5 +177,6 @@ export function normalizeForMcp(
       stdout: out.originalLength,
       stderr: err.originalLength,
     },
+    cancelled: (result as any).cancelled || false,
   };
 }

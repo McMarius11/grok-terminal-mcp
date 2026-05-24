@@ -104,8 +104,9 @@ server.tool(
     cwd: z.string().optional().describe("Working directory (defaults to project root)"),
     timeout: z.number().int().positive().optional().describe("Timeout in ms (default 120000)")
   },
-  async (args) => {
+  async (args, extra?: any) => {
     const { command: rawCommand, cwd = ROOT, timeout = currentConfig.defaultTimeoutMs } = args;
+    const signal = extra?.signal;
 
     const resolvedCommand = resolveCommand(rawCommand, currentConfig);
 
@@ -123,7 +124,7 @@ server.tool(
     logger.debug(`  cwd: ${cwd} | timeout: ${timeout}ms`);
 
     try {
-      const result = await executeCommand(rawCommand, currentConfig, { cwd, timeout });
+      const result = await executeCommand(rawCommand, currentConfig, { cwd, timeout, signal });
       const n = normalizeForMcp(result, currentConfig.maxOutputBytes);
 
       return {
@@ -137,9 +138,12 @@ server.tool(
             command: n.command,
             truncated: n.truncated,
             totalBytes: n.totalBytes,
-            tip: n.truncated
-              ? "Output was truncated for safety. Use start_process + read_process_output (with offset) for very large or long-running commands."
-              : undefined,
+            cancelled: n.cancelled || false,
+            tip: n.cancelled
+              ? "Command was cancelled by the client."
+              : n.truncated
+                ? "Output was truncated for safety. Use start_process + read_process_output (with offset) for very large or long-running commands."
+                : undefined,
           }, null, 2),
         }],
       };
@@ -278,11 +282,12 @@ server.tool(
 // ============================================
 
 // Internal wrapper for helpers that returns a nice MCP response (now uses unified normalized shape — Item 2)
-async function runProjectShortcut(shortcutOrCommand: string, customTimeout?: number) {
+async function runProjectShortcut(shortcutOrCommand: string, customTimeout?: number, signal?: AbortSignal) {
   try {
     const result = await executeCommand(shortcutOrCommand, currentConfig, {
       cwd: ROOT,
       timeout: customTimeout,
+      signal,
     });
 
     logger.info(`HELPER executed: ${result.command}`);
@@ -299,13 +304,16 @@ async function runProjectShortcut(shortcutOrCommand: string, customTimeout?: num
           durationMs: n.durationMs,
           truncated: n.truncated,
           totalBytes: n.totalBytes,
-          tip: n.truncated
-            ? "Output truncated. For very large output use start_process + read_process_output with offset."
-            : undefined,
+          cancelled: n.cancelled || false,
+          tip: n.cancelled
+            ? "Command was cancelled."
+            : n.truncated
+              ? "Output truncated. For very large output use start_process + read_process_output with offset."
+              : undefined,
         }, null, 2),
       }],
       isError: n.exitCode !== 0,
-    } as any; // SDK v1 strict literal "text" + branded content union vs our runtime JSON payload. Payload is correct and consumed fine by Grok.
+    } as any;
   } catch (err: any) {
     const message = err?.message || "Unknown error";
     logger.error(`Helper command failed: ${message}`);

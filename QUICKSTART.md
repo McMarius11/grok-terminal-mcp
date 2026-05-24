@@ -57,7 +57,7 @@ See `.grok-terminal.example.json` for a good starting point.
 
 ## 5. Useful Tools
 
-Besides the core tools, the following convenience tools are available (especially useful in the PanOS-Analyzer project):
+Besides the core tools, the following convenience tools are available (especially useful when you have many project-specific scripts):
 
 - `run_build`
 - `run_check_fast`

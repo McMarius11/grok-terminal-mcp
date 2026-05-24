@@ -50,5 +50,5 @@ We follow [Semantic Versioning](https://semver.org/):
 ## Notes
 
 - The `prepare` script ensures the package is always built before publishing.
-- Until this tool is extracted into its own repository, releases are tracked manually inside the PanOS-Analyzer monorepo.
+- Releases are now managed in its own standalone repository (https://github.com/McMarius11/grok-terminal-mcp).
 - Once extracted, we will set up automated publishing via GitHub Actions + npm trusted publishing.

@@ -2,7 +2,12 @@
 
 A clean, production-quality terminal and shell MCP server built with the official `@modelcontextprotocol/sdk`.
 
-It is designed to be reliable, practical, and safe for real development work — with a strong focus on **productivity** through project-specific shortcuts.
+Works great with **any project** — not just one specific one.
+
+It is designed to be reliable, practical, and safe for real development work, with:
+- Strong support for long-running processes
+- Useful built-in general helpers (`git_status`, `run_script`, `list_scripts`, `project_info`)
+- Project-specific shortcuts via simple config
 
 ## Why This Exists
 
@@ -18,27 +23,25 @@ Most existing terminal MCP servers have one or more of these problems:
 - Excellent support for long-running and background processes
 - First-class **project shortcuts** — the feature that gives the biggest real-world productivity boost
 
-It was originally created so an AI agent could work effectively and safely on the [PanOS-Analyzer](https://github.com/McMarius11/PanOS-Analyzer) project.
+It was originally created to give an AI agent reliable terminal control, but is designed as a general-purpose tool that works with any software project.
 
 ## Quick Start
 
-### For the PanOS-Analyzer Project
+### Standalone Use (Recommended for most people)
 
-Add this to your `~/.grok/config.toml`:
+1. Clone or copy the `grok-terminal-mcp` folder into your project (e.g. into `tools/grok-terminal-mcp`).
+2. Create a `.grok-terminal.json` in your project root (start with the `.grok-terminal.example.json`).
+3. Add it to your `~/.grok/config.toml` (or equivalent MCP client config).
+
+Example entry:
 
 ```toml
 [mcp_servers.grok-terminal]
 command = "node"
-args = ["/absolute/path/to/PanOS-Analyzer-main/tools/grok-terminal-mcp/dist/server.js"]
+args = ["/absolute/path/to/your/project/tools/grok-terminal-mcp/dist/server.js"]
 ```
 
-### For Other Projects (Standalone)
-
-1. Copy the `grok-terminal-mcp` folder into your project (recommended: `tools/grok-terminal-mcp`).
-2. Create a `.grok-terminal.json` in your project root (start with `.grok-terminal.example.json`).
-3. Add an entry in your `~/.grok/config.toml`.
-
-See [STANDALONE.md](./STANDALONE.md) for detailed instructions.
+See [STANDALONE.md](./STANDALONE.md) and [QUICKSTART.md](./QUICKSTART.md) for detailed instructions.
 
 ## CLI
 
@@ -108,7 +111,6 @@ npm install
 npm run dev                    # Fast iteration with tsx
 npm run dev -- --debug
 npm run dev:from-root          # From project root
-npm run dev:analyzer           # Best experience when developing inside PanOS-Analyzer
 npm run build
 npm test
 ```
