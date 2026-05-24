@@ -121,6 +121,14 @@ npm test
 - [RELEASE.md](./RELEASE.md)
 - [CHANGELOG.md](./CHANGELOG.md)
 
+## Known Limitations
+
+- Cancellation support is good but not perfect across every possible command (especially complex shell constructs).
+- Test coverage for the newer general-purpose helpers is still being expanded.
+- `dist/` is committed for easier direct usage and `npx`-style workflows.
+
+These are known and tracked. The project aims for pragmatic excellence rather than theoretical perfection.
+
 ## License
 
 MIT

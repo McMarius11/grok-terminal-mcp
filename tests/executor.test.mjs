@@ -105,4 +105,33 @@ describe('Output Normalization', () => {
     assert.equal(normalized.truncated, true);
     assert.ok(normalized.totalBytes.stdout > 2000);
   });
+
+  it('normalizeForMcp should correctly carry the cancelled flag', () => {
+    const fakeResult = {
+      stdout: 'partial output',
+      stderr: '',
+      exitCode: 130,
+      durationMs: 500,
+      command: 'long running command',
+      cancelled: true
+    };
+    const normalized = normalizeForMcp(fakeResult, 10000);
+    assert.equal(normalized.cancelled, true);
+    assert.equal(normalized.exitCode, 130);
+  });
+
+  it('truncateOutput should handle empty and null input gracefully', () => {
+    assert.deepEqual(truncateOutput('', 100), { text: '', truncated: false, originalLength: 0 });
+    assert.deepEqual(truncateOutput(null, 100), { text: '', truncated: false, originalLength: 0 });
+  });
+
+  it('truncateOutput should produce head + tail with marker for very large output', () => {
+    const huge = 'LINE\n'.repeat(5000);
+    const result = truncateOutput(huge, 2000);
+    assert.equal(result.truncated, true);
+    assert.ok(result.text.includes('[... TRUNCATED'));
+    // Should contain beginning and end
+    assert.ok(result.text.startsWith('LINE'));
+    assert.ok(result.text.endsWith('LINE\n'));
+  });
 });
