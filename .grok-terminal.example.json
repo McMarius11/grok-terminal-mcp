@@ -1,17 +1,24 @@
 {
-  "_comment": "Example configuration for grok-terminal-mcp. Copy this file to .grok-terminal.json in your project root and customize it.",
+  "_comment": "grok-terminal-mcp Example Configuration",
+  "_comment2": "Copy this file to .grok-terminal.json in your project root and customize it for your needs.",
+  "_comment3": "The MCP automatically searches upwards from the current working directory for this file.",
 
-  "_info": "This file controls security, timeouts, and project-specific shortcuts. The MCP will automatically find it.",
+  "_security_note": "This file is your main security boundary. Be thoughtful about what you allow. The AI can only execute commands listed here (or their direct children).",
 
   "allowedCommands": [
     "npm", "node", "npx", "yarn", "pnpm", "bun",
-    "git", "bash", "sh", "python", "python3", "curl", "unzip", "chmod", "cp", "mv",
-    "ls", "cat", "echo", "find", "grep", "head", "tail", "wc",
-    "make", "docker", "podman"
+    "git", "bash", "sh",
+    "python", "python3",
+    "curl",
+    "make",
+    "ls", "cat", "echo", "find", "grep", "head", "tail", "wc", "rg",
+    "cp", "mv", "chmod", "unzip",
+    "docker", "podman"
   ],
 
   "blockedPatterns": [
     "rm -rf /",
+    "rm -rf ~",
     "curl | sh",
     ":(){ :|:& };",
     "mkfs",
@@ -19,7 +26,8 @@
     "> /dev/sda",
     "shutdown",
     "reboot",
-    "halt"
+    "halt",
+    "poweroff"
   ],
 
   "maxOutputBytes": 300000,
@@ -27,17 +35,31 @@
   "defaultTimeoutMs": 180000,
 
   "projectShortcuts": {
+    "_comment": "Define your most common commands here. The AI can then simply say 'run build' instead of typing the full command.",
+
     "dev": "npm run dev",
     "build": "npm run build",
     "test": "npm test",
     "lint": "npm run lint",
     "typecheck": "npm run typecheck",
     "clean": "rm -rf dist build .next",
-    "bb:build": "bun run build",
+
+    "install": "npm install",
+
+    "_monorepo_examples": "Uncomment and adapt for monorepos:",
+    "web:dev": "npm run dev --workspace=apps/web",
+    "api:build": "npm run build --workspace=apps/api",
+
+    "_bun_examples": "If you use Bun:",
     "bb:dev": "bun run dev",
-    "bb:dev:watch": "bun run dev:watch"
+    "bb:build": "bun run build",
+    "bb:test": "bun test"
   },
 
-  "_mcpConnections": "Advanced: Allow the AI to dynamically connect to other MCP servers at runtime (e.g. the Blockbench MCP plugin). Default is false for security reasons.",
-  "allowRemoteMcpConnections": false
+  "allowRemoteMcpConnections": false,
+
+  "_advanced": {
+    "_comment": "Only enable allowRemoteMcpConnections if you trust the AI to connect to other MCP servers at runtime (e.g. for the Blockbench MCP plugin).",
+    "allowRemoteMcpConnections": false
+  }
 }
