@@ -329,9 +329,9 @@ server.tool(
   {
     timeout: z.number().optional().describe("Timeout in ms (default 300000 = 5 minutes)")
   },
-  async ({ timeout }) => {
+  async ({ timeout }, extra?: any) => {
     logger.info("Helper called: run_build");
-    return runProjectShortcut("build", timeout) as any;
+    return runProjectShortcut("build", timeout, extra?.signal) as any;
   }
 );
 
@@ -339,9 +339,9 @@ server.tool(
   "run_check_fast",
   "Runs the fast project check (very useful for quick validation).",
   {},
-  async () => {
+  async (_, extra?: any) => {
     logger.info("Helper called: run_check_fast");
-    return runProjectShortcut("check:fast") as any;
+    return runProjectShortcut("check:fast", undefined, extra?.signal) as any;
   }
 );
 
@@ -351,9 +351,9 @@ server.tool(
   {
     timeout: z.number().optional().describe("Timeout in ms (default 600000 = 10 minutes)")
   },
-  async ({ timeout }) => {
+  async ({ timeout }, extra?: any) => {
     logger.info("Helper called: run_verify_all");
-    return runProjectShortcut("verify:all", timeout) as any;
+    return runProjectShortcut("verify:all", timeout, extra?.signal) as any;
   }
 );
 
@@ -361,9 +361,9 @@ server.tool(
   "quick_check",
   "Runs the absolute fastest possible sanity check for the project.",
   {},
-  async () => {
+  async (_, extra?: any) => {
     logger.info("Helper called: quick_check");
-    return runProjectShortcut("quick-check") as any;
+    return runProjectShortcut("quick-check", undefined, extra?.signal) as any;
   }
 );
 
@@ -396,10 +396,14 @@ server.tool(
   "git_status",
   "Shows a clean, compact git status (branch + changes). Works in any git repository.",
   {},
-  async () => {
+  async (_, extra?: any) => {
     logger.info("Helper called: git_status");
     try {
-      const result = await executeCommand("git status --short -b", currentConfig, { cwd: ROOT, timeout: 15000 });
+      const result = await executeCommand("git status --short -b", currentConfig, { 
+        cwd: ROOT, 
+        timeout: 15000,
+        signal: extra?.signal 
+      });
       const normalized = normalizeForMcp(result, currentConfig.maxOutputBytes);
       return {
         content: [{ type: "text", text: JSON.stringify(normalized, null, 2) }],
@@ -435,6 +439,62 @@ server.tool(
         }, null, 2),
       }],
     };
+  }
+);
+
+// --- git_diff (new general helper) ---
+server.tool(
+  "git_diff",
+  "Shows git diff (unstaged changes). Useful for seeing what has been changed.",
+  {
+    staged: z.boolean().optional().describe("If true, shows staged changes instead (git diff --staged)")
+  },
+  async ({ staged }, extra?: any) => {
+    logger.info(`Helper called: git_diff (staged=${staged})`);
+    const cmd = staged ? "git diff --staged" : "git diff";
+    try {
+      const result = await executeCommand(cmd, currentConfig, { 
+        cwd: ROOT, 
+        timeout: 30000,
+        signal: extra?.signal 
+      });
+      const normalized = normalizeForMcp(result, currentConfig.maxOutputBytes);
+      return {
+        content: [{ type: "text", text: JSON.stringify(normalized, null, 2) }],
+        isError: normalized.exitCode !== 0,
+      } as any;
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to get git diff", "execution") as any;
+    }
+  }
+);
+
+// --- deps_outdated (new general helper) ---
+server.tool(
+  "deps_outdated",
+  "Shows outdated dependencies using the project's package manager (npm/yarn/pnpm/bun).",
+  {},
+  async (_, extra?: any) => {
+    logger.info("Helper called: deps_outdated");
+    const pm = detectPackageManager(ROOT);
+    // Most package managers support "outdated" (npm, yarn, pnpm, bun)
+    const cmd = `${pm.cmd} outdated`;
+    try {
+      const result = await executeCommand(cmd, currentConfig, { 
+        cwd: ROOT, 
+        timeout: 60000,
+        signal: extra?.signal 
+      });
+      const normalized = normalizeForMcp(result, currentConfig.maxOutputBytes);
+      return {
+        content: [{ type: "text", text: JSON.stringify(normalized, null, 2) }],
+        isError: normalized.exitCode !== 0,
+      } as any;
+    } catch (err: any) {
+      // Many package managers return non-zero when there are outdated packages
+      // So we still return the output even on error
+      return toolError(err?.message || "Failed to check outdated dependencies", "execution") as any;
+    }
   }
 );
 
@@ -474,7 +534,7 @@ server.tool(
   "project_info",
   "Gives a quick overview of the current project (name, version, package manager, git remote, node version, etc.). Useful for orientation.",
   {},
-  async () => {
+  async (_, extra?: any) => {
     logger.info("Helper called: project_info");
     const pkg = getPackageJson(ROOT);
     const pm = detectPackageManager(ROOT);
@@ -493,7 +553,11 @@ server.tool(
 
     // Try to get git remote
     try {
-      const gitResult = await executeCommand("git config --get remote.origin.url", currentConfig, { cwd: ROOT, timeout: 8000 });
+      const gitResult = await executeCommand("git config --get remote.origin.url", currentConfig, { 
+        cwd: ROOT, 
+        timeout: 8000,
+        signal: extra?.signal 
+      });
       if (gitResult.exitCode === 0) {
         info.gitRemote = gitResult.stdout.trim();
       }
@@ -501,7 +565,11 @@ server.tool(
 
     // Node version
     try {
-      const nodeResult = await executeCommand("node --version", currentConfig, { cwd: ROOT, timeout: 5000 });
+      const nodeResult = await executeCommand("node --version", currentConfig, { 
+        cwd: ROOT, 
+        timeout: 5000,
+        signal: extra?.signal 
+      });
       if (nodeResult.exitCode === 0) {
         info.nodeVersion = nodeResult.stdout.trim();
       }

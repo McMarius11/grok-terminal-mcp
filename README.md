@@ -71,8 +71,10 @@ npm run dev -- --debug
 | `reload_config`         | Reload `.grok-terminal.json` without restarting                          |
 | **General helpers (always available)** | |
 | `git_status`            | Clean git status for any repository                                      |
+| `git_diff`              | Show unstaged (or staged) git diff                                       |
 | `list_scripts`          | Show all scripts from package.json + auto-detect package manager         |
 | `run_script`            | Run package.json scripts (auto npm/yarn/pnpm/bun)                        |
+| `deps_outdated`         | Show outdated dependencies using the project's package manager           |
 | `project_info`          | Quick project overview (name, version, git, node, package manager...)    |
 | **Project-specific** (via shortcuts in .grok-terminal.json) | |
 | `run_build` / `run_check_fast` / etc. | Whatever you define in your config |

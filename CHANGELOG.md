@@ -7,10 +7,12 @@ All notable changes to grok-terminal-mcp will be documented in this file.
 ### Added
 - **General-purpose helpers** (work in any project, no config required):
   - `git_status`
+  - `git_diff`
   - `list_scripts`
   - `run_script` (auto-detects npm/yarn/pnpm/bun)
+  - `deps_outdated`
   - `project_info`
-- Basic tool call cancellation support (AbortSignal wired through run_command)
+- Improved tool call cancellation support (signal forwarding across most tools)
 - Real working `reload_config` implementation
 - `cancelled` flag in responses
 - `.grok-terminal.example.json` for easy onboarding
