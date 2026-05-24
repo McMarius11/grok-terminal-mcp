@@ -56,7 +56,6 @@ grok-terminal-mcp --root /path/to/project
 During development:
 ```bash
 npm run dev -- --debug
-npm run dev:from-root -- --debug
 ```
 
 ## Available Tools
@@ -110,14 +109,9 @@ cd tools/grok-terminal-mcp
 npm install
 npm run dev                    # Fast iteration with tsx
 npm run dev -- --debug
-npm run dev:from-root          # From project root
 npm run build
 npm test
 ```
-
-## Migration from Legacy
-
-If you previously used the old pure JavaScript version, see [MIGRATION.md](./MIGRATION.md).
 
 ## Contributing & Releases
 
