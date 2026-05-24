@@ -18,6 +18,12 @@ import {
   writeFileContent,
   applyEdits,
   searchFiles,
+  listDirectory,
+  getDirectoryTree,
+  createDirectory,
+  moveFile,
+  getFileInfo,
+  findFiles,
   type FileEdit,
 } from "./fileTools.js";
 
@@ -676,6 +682,147 @@ registerTool(
       };
     } catch (err: any) {
       return toolError(err?.message || "Failed to search files", "execution") as any;
+    }
+  }
+);
+
+// ============================================
+// Additional Filesystem Tools (complete replacement for official FS MCP)
+// ============================================
+
+// --- list_directory ---
+const ListDirectorySchema = z.object({
+  path: z.string().describe("Directory to list"),
+  withSizes: z.boolean().optional().default(false).describe("Include file sizes (slower on large directories)"),
+});
+
+registerTool(
+  "list_directory",
+  "List the contents of a directory. Clean structured output with file/directory distinction. Use withSizes for size information.",
+  ListDirectorySchema,
+  async (args: any) => {
+    logger.info(`Tool called: list_directory -> ${args.path}`);
+    try {
+      const entries = await listDirectory(args.path, args.withSizes);
+      return {
+        content: [{ type: "text", text: JSON.stringify(entries, null, 2) }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to list directory", "execution") as any;
+    }
+  }
+);
+
+// --- directory_tree ---
+const DirectoryTreeSchema = z.object({
+  path: z.string().describe("Root directory for the tree"),
+  excludePatterns: z.array(z.string()).optional().default([]).describe("Glob patterns to exclude (e.g. node_modules/**, .git/**)"),
+});
+
+registerTool(
+  "directory_tree",
+  "Returns a recursive directory tree as structured JSON. Excellent for understanding project layout.",
+  DirectoryTreeSchema,
+  async (args: any) => {
+    logger.info(`Tool called: directory_tree -> ${args.path}`);
+    try {
+      const tree = await getDirectoryTree(args.path, args.excludePatterns);
+      return {
+        content: [{ type: "text", text: JSON.stringify(tree, null, 2) }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to build directory tree", "execution") as any;
+    }
+  }
+);
+
+// --- create_directory ---
+const CreateDirectorySchema = z.object({
+  path: z.string().describe("Directory path to create (creates parent directories as needed)"),
+});
+
+registerTool(
+  "create_directory",
+  "Create a directory (and any necessary parent directories). Safe to call if the directory already exists.",
+  CreateDirectorySchema,
+  async (args: any) => {
+    logger.info(`Tool called: create_directory -> ${args.path}`);
+    try {
+      await createDirectory(args.path);
+      return {
+        content: [{ type: "text", text: `Directory created (or already existed): ${args.path}` }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to create directory", "execution") as any;
+    }
+  }
+);
+
+// --- move_file ---
+const MoveFileSchema = z.object({
+  source: z.string().describe("Source file or directory path"),
+  destination: z.string().describe("Destination path (must not already exist)"),
+});
+
+registerTool(
+  "move_file",
+  "Move or rename a file or directory. Fails if the destination already exists.",
+  MoveFileSchema,
+  async (args: any) => {
+    logger.info(`Tool called: move_file ${args.source} -> ${args.destination}`);
+    try {
+      await moveFile(args.source, args.destination);
+      return {
+        content: [{ type: "text", text: `Successfully moved ${args.source} → ${args.destination}` }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to move file", "execution") as any;
+    }
+  }
+);
+
+// --- get_file_info ---
+const GetFileInfoSchema = z.object({
+  path: z.string().describe("Path to the file or directory"),
+});
+
+registerTool(
+  "get_file_info",
+  "Get detailed metadata about a file or directory (size, timestamps, permissions, type).",
+  GetFileInfoSchema,
+  async (args: any) => {
+    logger.info(`Tool called: get_file_info -> ${args.path}`);
+    try {
+      const info = await getFileInfo(args.path);
+      return {
+        content: [{ type: "text", text: JSON.stringify(info, null, 2) }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to get file info", "execution") as any;
+    }
+  }
+);
+
+// --- find_files (glob-based filename search) ---
+const FindFilesSchema = z.object({
+  path: z.string().describe("Root directory to search in"),
+  pattern: z.string().describe("Glob pattern to match against file/directory names (e.g. **/*.ts, *.config.*)"),
+  excludePatterns: z.array(z.string()).optional().default([]).describe("Glob patterns to exclude"),
+});
+
+registerTool(
+  "find_files",
+  "Recursively find files and directories matching a glob pattern (by name/path). Complements search_files (which searches file contents).",
+  FindFilesSchema,
+  async (args: any) => {
+    logger.info(`Tool called: find_files -> ${args.path} pattern=${args.pattern}`);
+    try {
+      const results = await findFiles(args.path, args.pattern, args.excludePatterns);
+      return {
+        content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to find files", "execution") as any;
     }
   }
 );

@@ -2,6 +2,28 @@
 
 All notable changes to grok-terminal-mcp will be documented in this file.
 
+## [Unreleased / 0.6.0]
+### Added — Complete Filesystem Tooling (Full replacement path for official server-filesystem)
+grok-terminal-mcp now contains a complete, high-quality set of structured filesystem operations. Combined with the existing powerful terminal, git, process, and meta-MCP tools, it can serve as a **single primary development MCP** for most projects.
+
+New tools (all with clean structured JSON output):
+- `list_directory` (with optional `withSizes`)
+- `directory_tree` (recursive, with excludePatterns)
+- `create_directory` (recursive)
+- `move_file` (rename / move, with safety checks)
+- `get_file_info` (size, timestamps, permissions, type)
+- `find_files` (glob-based recursive search by name/path — complement to the existing content-based `search_files`)
+
+All new tools follow the same patterns as the 0.4.0 file tools (good error handling, consistent output shapes).
+
+With these additions, the vast majority of use cases covered by the official `@modelcontextprotocol/server-filesystem` are now available inside grok-terminal-mcp (often with better editing ergonomics via `edit_file` + `dryRun`).
+
+### Changed
+- Version bump preparation toward 0.6.0
+- Updated fileTools attribution header (more functions now adapted from the official MIT-licensed filesystem server)
+
+---
+
 ## [0.5.0] - 2026-05-25
 
 ### Added — Bun + Blockbench MCP Plugin Development Superpowers

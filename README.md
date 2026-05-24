@@ -80,7 +80,13 @@ npm run dev -- --debug
 | `read_text_file`        | Read file content with optional head/tail                                |
 | `write_file`            | Write/overwrite a file                                                   |
 | `edit_file`             | Precise multi-edit with `dryRun` diff preview (recommended for edits)    |
-| `search_files`          | Recursive content search with exclude patterns                           |
+| `search_files`          | Recursive **content** search with exclude patterns                       |
+| `find_files`            | Recursive **filename/glob** search (name-based, complements search_files)|
+| `list_directory`        | Structured directory listing (optional sizes)                            |
+| `directory_tree`        | Recursive tree view of a directory                                       |
+| `create_directory`      | Create directories recursively                                           |
+| `move_file`             | Move or rename files/directories                                         |
+| `get_file_info`         | Detailed metadata (size, timestamps, permissions, type)                  |
 | **Project-specific** (via shortcuts in .grok-terminal.json) | |
 | `run_build` / `run_check_fast` / etc. | Whatever you define in your config |
 | **Bun + Blockbench dev tools (0.5.0+)** | |
@@ -140,7 +146,9 @@ When `dryRun: true`, it returns a clean unified diff so you (or the agent) can r
 
 This is currently the cleanest way to make safe, reviewable source changes.
 
-Other available tools: `read_text_file` (with head/tail), `write_file`, `search_files`.
+Other available tools: `read_text_file` (head/tail), `write_file`, `edit_file` (dryRun), `search_files` (content), `find_files` (glob names), `list_directory`, `directory_tree`, `create_directory`, `move_file`, `get_file_info`.
+
+**Goal**: With these tools grok-terminal-mcp can serve as a full-featured replacement for the official Filesystem MCP in the vast majority of development scenarios (while adding far stronger terminal, git, process, and meta-MCP capabilities).
 
 ## Bun + Blockbench MCP Plugin Development (Recommended Pairing)
 
@@ -253,9 +261,9 @@ npm test
 ## Known Limitations
 
 - Cancellation works well for most commands but can be less reliable with very complex or long-running shell constructs.
-- The new structured file tools (`edit_file`, `search_files`, etc.) are powerful and the recommended way for precise file work, but they are newer than the core terminal functionality.
-- Test coverage is decent (29+ tests) but still being expanded, especially around the file tools and edge-case cancellation.
-- The tool is intentionally pragmatic. It will not be as "bulletproof" or feature-complete as a dedicated Filesystem MCP for every possible file operation.
+- The structured file tools are now comprehensive (read/write/edit + full navigation: list, tree, create, move, info, find). They were specifically built so grok-terminal-mcp can replace the official Filesystem MCP for most real-world development work.
+- Test coverage is decent and growing (especially around file tools + cancellation).
+- The file tools currently operate with the same permissions as the Node process (like the previous file tools). For very high-security environments you may still prefer an explicitly allow-listed Filesystem MCP.
 
 The project prioritizes real-world usefulness over theoretical perfection. All known gaps are tracked.
 
