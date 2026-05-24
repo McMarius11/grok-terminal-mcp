@@ -1,44 +1,42 @@
 # grok-terminal-mcp
 
-A powerful, production-quality **terminal + structured filesystem + dev workflow MCP** built with the official `@modelcontextprotocol/sdk`.
+A production-quality terminal and filesystem MCP server built with the official `@modelcontextprotocol/sdk`.
 
-Designed as a **near-complete single MCP** for real software engineering work (replacing the need for separate terminal + filesystem MCPs in most cases).
+It works with any project and aims to combine reliable terminal execution with useful structured file operations, so you don't always need multiple separate MCP servers.
 
-It works great with **any project** and focuses on:
-- Reliable terminal execution + excellent long-running process support
-- High-quality structured file operations (including `edit_file` with dry-run diff preview)
-- Practical HTTP client for API work
-- Useful Git helpers + project automation tools
-- Simple but effective security model you fully control
+Key strengths:
+- Good support for long-running processes and background tasks
+- Practical structured file tools (including `edit_file` with dry-run preview)
+- Built-in HTTP client
+- Project-specific shortcuts
+- Configurable security model
 
 ## Why This Exists
 
-Most existing terminal MCP servers have one or more of these problems:
-- Unreliable stdio handshake with Grok
-- Overly restrictive security models that make real work painful
-- Extremely bloated (heavily optimized for Claude Desktop / Cursor)
-- Weak support for long-running processes and background tasks
+Many terminal-focused MCP servers have recurring issues:
+- Unstable connections
+- Weak support for long-running processes
+- Limited or no structured file operations
 
-`grok-terminal-mcp` was built with a different philosophy:
-- Uses the official MCP SDK correctly and reliably (excellent handshake stability)
-- Pragmatic but explicit security model (you stay in full control via `.grok-terminal.json`)
-- Outstanding support for long-running processes, background tasks and watches
-- First-class structured file tools + HTTP client (reducing the need for multiple MCPs)
-- Simple but powerful **project shortcuts**
+`grok-terminal-mcp` was created with these priorities:
+- Use the official MCP SDK for better reliability
+- Offer a pragmatic, configurable security model
+- Provide solid support for background processes and watches
+- Include practical structured file tools alongside terminal capabilities
+- Support simple project-specific shortcuts
 
-It started as a stable terminal replacement but has evolved into a general-purpose development MCP that can handle the majority of day-to-day software engineering tasks on its own.
+## Comparison with other MCPs
 
-## Why grok-terminal-mcp instead of the alternatives?
+The table below gives a rough overview (ratings are subjective):
 
-| MCP                            | Terminal | Filesystem Tools | HTTP Client | Long-running Processes | Stability with Grok | Config Flexibility | Notes |
-|--------------------------------|----------|------------------|-------------|------------------------|---------------------|--------------------|-------|
-| **grok-terminal-mcp**          | Excellent | Excellent       | Excellent   | Excellent             | Very good           | Very high          | One tool for most needs |
-| desktop-commander              | Good     | Good             | None        | Good                  | Mixed               | Low                | Popular but sometimes unstable |
-| mcp-server-terminal            | Good     | Weak             | None        | Weak                  | Poor                | Low                | Often has handshake issues |
-| Official Filesystem MCP        | None     | Excellent        | None        | None                  | Good                | Medium             | Only filesystem, nothing else |
-| Others                         | Varies   | Varies           | Rare        | Varies                | Varies              | Varies             | Usually specialized |
+| MCP                            | Terminal | Filesystem Tools | HTTP Client | Long-running Processes | Notes |
+|--------------------------------|----------|------------------|-------------|------------------------|-------|
+| grok-terminal-mcp              | Good     | Good             | Yes         | Good                   | Combines terminal + filesystem + HTTP |
+| desktop-commander              | Good     | Good             | No          | Good                   | Popular, occasional stability issues |
+| mcp-server-terminal            | Good     | Limited          | No          | Limited                | Known for connection problems |
+| Official Filesystem MCP        | No       | Good             | No          | No                     | Focused only on filesystem operations |
 
-**grok-terminal-mcp** tries to be the "one MCP you actually need" for real development work instead of juggling 2–3 different servers.
+Many people run grok-terminal-mcp together with (or instead of) the official filesystem MCP.
 
 ## Quick Start
 
@@ -169,96 +167,29 @@ Other available tools: `read_text_file` (head/tail), `write_file`, `edit_file` (
 
 **Goal**: With these tools grok-terminal-mcp can serve as a full-featured replacement for the official Filesystem MCP in the vast majority of development scenarios (while adding far stronger terminal, git, process, and meta-MCP capabilities).
 
-## Bun + Blockbench MCP Plugin Development (Recommended Pairing)
+## General Development Tools
 
-`grok-terminal-mcp` + the [blockbench-mcp-plugin](https://github.com/McMarius11/blockbench-mcp-plugin) form a perfect complementary pair:
+In addition to the core terminal and file tools, `grok-terminal-mcp` includes several helpers that are useful across many kinds of projects:
 
-- **grok-terminal-mcp** (this project) = host dev environment power (Bun bootstrap, builds, filesystem, long-running processes, Blockbench plugin *installation*).
-- **blockbench-mcp-plugin** (the other repo) = in-Blockbench control (modeling, UV, silent export, `install_plugin_from_path` for hot-reload, 60-minute sessions, etc.).
-
-### The Fastest Possible Dev Loop (as an AI agent)
-
-After changing any code in your `blockbench_mcp` checkout:
-
-1. Call `build_and_install_blockbench_plugin` with `projectDir` pointing at the checkout.
-2. The tool ensures Bun (installs it on first use if needed), runs the full Bun build, and drops the fresh `mcp.js` into your Blockbench plugins folder.
-3. Inside a running Blockbench that already has the MCP plugin loaded, call its `install_plugin_from_path` (or simply "Reload Plugins" in the Blockbench menu / restart Blockbench).
-
-One tool call → fully updated plugin in Blockbench. Zero manual steps.
-
-Example (the AI will figure out the path from context or you can pass it explicitly):
-
-```json
-{
-  "projectDir": "/home/you/Gamedev/grok/blockbench_mcp"
-}
-```
-
-## General Development Tools (usable for any project)
-
-In addition to Blockbench-specific helpers, `grok-terminal-mcp` now includes powerful **general-purpose** tools for AI-driven development:
-
-### Core Capabilities
-
-| Tool                    | Purpose |
-|-------------------------|---------|
-| `ensure_runtime` / `get_runtime_info` | Install and inspect runtimes (Bun, Node, ...) |
-| `install_artifact`      | Copy built artifacts into any target directory |
-| `start_watch`           | Watch a folder and run commands on change |
-| `start_dev_session`     | One-call smart dev loop (watch + build + optional install) |
-| `dev_status`            | Quick health check of current environment (runtimes, watches, git, processes) |
-| `find_executable` / `launch_app` / `is_app_running` | General app discovery and control |
-| `git_commit` / `git_create_branch` / `git_push` | Clean git workflow helpers |
-
-These tools are designed to be reusable across many kinds of projects (Godot addons, VSCode extensions, Electron apps, CLI tools, etc.).
+### Useful Helpers
+- Runtime management (`ensure_runtime`, `get_runtime_info`)
+- Watching and dev loops (`start_watch`, `start_dev_session`)
+- Artifact installation
+- General app control (`launch_app`, `is_app_running`, `find_executable`)
+- Additional git helpers (`git_commit`, `git_create_branch`, `git_push`)
 
 ### Dynamic MCP Connections
 
-You can connect to other MCP servers **at runtime** (without editing your Grok config every time).
-
-This is especially useful for connecting to project-specific MCPs, such as the Blockbench MCP plugin.
+You can connect to other MCP servers at runtime (without changing your Grok config every time).
 
 **Relevant tools:**
-- `mcp_connect` — Connect to an HTTP MCP server (e.g. Blockbench)
-- `mcp_connect_stdio` — Start and connect to a local stdio MCP
-- `mcp_list` — List currently connected MCP servers
-- `mcp_disconnect`
-- `mcp_list_tools` — See what tools a connected server offers
-- `mcp_call` — Call a tool on a connected server
+- `mcp_connect` / `mcp_connect_stdio`
+- `mcp_list`, `mcp_disconnect`
+- `mcp_list_tools`, `mcp_call`
 
-By default, only connections to `localhost` are allowed (for security).  
-You can enable remote connections with:
+By default only localhost connections are allowed. You can enable broader access with `"allowRemoteMcpConnections": true` in your `.grok-terminal.json`.
 
-```json
-"allowRemoteMcpConnections": true
-```
-
-in your `.grok-terminal.json`.
-
-Example: Connect to a running Blockbench MCP:
-```json
-{
-  "id": "blockbench",
-  "name": "Blockbench",
-  "url": "http://localhost:3000/bb-mcp"
-}
-```
-
-Then use `mcp_list_tools` and `mcp_call` to interact with it.
-
-Example usage for a generic project:
-```json
-{
-  "projectDir": "/path/to/my-project",
-  "buildCommand": "bun run build",
-  "installCommand": "bun run install:plugin"
-}
-```
-Then call `start_dev_session`.
-
-You can also use the lower-level tools (`ensure_bun` → `bun` aware commands via `run_script` or `run_command` → `install_blockbench_plugin`) if you need more control.
-
-See the source of `bunTools.ts` and `blockbenchTools.ts` for exact behavior and platform paths.
+This is useful when you have project-specific MCP servers you want the AI to interact with dynamically.
 
 ## Development
 

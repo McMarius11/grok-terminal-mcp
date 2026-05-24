@@ -50,16 +50,16 @@
     "web:dev": "npm run dev --workspace=apps/web",
     "api:build": "npm run build --workspace=apps/api",
 
-    "_bun_examples": "If you use Bun:",
-    "bb:dev": "bun run dev",
-    "bb:build": "bun run build",
-    "bb:test": "bun test"
+    "_bun_examples": "If you use Bun, you can add similar shortcuts:",
+    // "bb:dev": "bun run dev",
+    // "bb:build": "bun run build",
+    // "bb:test": "bun test"
   },
 
   "allowRemoteMcpConnections": false,
 
   "_advanced": {
-    "_comment": "Only enable allowRemoteMcpConnections if you trust the AI to connect to other MCP servers at runtime (e.g. for the Blockbench MCP plugin).",
+    "_comment": "Only enable allowRemoteMcpConnections if you want the AI to be able to connect to other MCP servers at runtime.",
     "allowRemoteMcpConnections": false
   }
 }
