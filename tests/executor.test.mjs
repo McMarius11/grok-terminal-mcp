@@ -74,3 +74,35 @@ describe('Executor', () => {
     }
   });
 });
+
+// Tests for output normalization (new in 0.4.x)
+import { truncateOutput, normalizeForMcp } from '../src/executor.ts';
+
+describe('Output Normalization', () => {
+  it('should not truncate small outputs', () => {
+    const result = truncateOutput('hello world', 100);
+    assert.equal(result.truncated, false);
+    assert.equal(result.text, 'hello world');
+  });
+
+  it('should truncate large outputs and mark them', () => {
+    const longText = 'x'.repeat(10000);
+    const result = truncateOutput(longText, 1000);
+    assert.equal(result.truncated, true);
+    assert.ok(result.text.includes('TRUNCATED'));
+    assert.ok(result.text.length < longText.length);
+  });
+
+  it('normalizeForMcp should include truncated and totalBytes fields', () => {
+    const fakeResult = {
+      stdout: 'a'.repeat(5000),
+      stderr: '',
+      exitCode: 0,
+      durationMs: 10,
+      command: 'echo test'
+    };
+    const normalized = normalizeForMcp(fakeResult, 2000);
+    assert.equal(normalized.truncated, true);
+    assert.ok(normalized.totalBytes.stdout > 2000);
+  });
+});
