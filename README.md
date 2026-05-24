@@ -109,6 +109,33 @@ This tool is designed exclusively for **trusted local development** on your own 
 
 Review `allowedCommands` and `blockedPatterns` carefully before sharing configurations.
 
+## Structured File Tools
+
+In addition to raw shell access, the MCP provides a small set of higher-level file tools (inspired by the official Filesystem MCP). These are especially useful for precise edits without shell gymnastics.
+
+### Recommended: `edit_file` + `dryRun`
+
+Instead of using `run_command` with `sed` or similar, use the structured editor:
+
+```json
+{
+  "path": "src/foo.ts",
+  "edits": [
+    {
+      "oldText": "const foo = 42;",
+      "newText": "const foo = 43;"
+    }
+  ],
+  "dryRun": true
+}
+```
+
+When `dryRun: true`, it returns a clean unified diff so you (or the agent) can review before applying.
+
+This is currently the cleanest way to make safe, reviewable source changes.
+
+Other available tools: `read_text_file` (with head/tail), `write_file`, `search_files`.
+
 ## Development
 
 ```bash
@@ -128,11 +155,12 @@ npm test
 
 ## Known Limitations
 
-- Cancellation support is good but not perfect across every possible command (especially complex shell constructs).
-- Test coverage for the newer general-purpose helpers is still being expanded.
-- `dist/` is committed for easier direct usage and `npx`-style workflows.
+- Cancellation works well for most commands but can be less reliable with very complex or long-running shell constructs.
+- The new structured file tools (`edit_file`, `search_files`, etc.) are powerful and the recommended way for precise file work, but they are newer than the core terminal functionality.
+- Test coverage is decent (29+ tests) but still being expanded, especially around the file tools and edge-case cancellation.
+- The tool is intentionally pragmatic. It will not be as "bulletproof" or feature-complete as a dedicated Filesystem MCP for every possible file operation.
 
-These are known and tracked. The project aims for pragmatic excellence rather than theoretical perfection.
+The project prioritizes real-world usefulness over theoretical perfection. All known gaps are tracked.
 
 ## License
 
