@@ -2,12 +2,49 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'tsconfig.json'
+      - '.github/workflows/ci.yml'
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'tsconfig.json'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
 
 jobs:
+  # Lightweight check on direct pushes to main (faster feedback, less noise)
+  build-check:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+  # Full test matrix only on Pull Requests + manual runs
   build-and-test:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     strategy:
