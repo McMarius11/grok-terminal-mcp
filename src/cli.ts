@@ -14,7 +14,7 @@ export interface CliOptions {
 export function parseCliArgs(argv: string[] = process.argv): CliOptions {
   const cli = cac('grok-terminal-mcp');
 
-  cli
+  (cli as any)
     .option('--config <path>', 'Path to a custom .grok-terminal.json configuration file')
     .option('--debug', 'Enable debug logging (very verbose)')
     .option('--root <dir>', 'Override the project root directory (affects security jail and default config search)')

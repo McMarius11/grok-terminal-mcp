@@ -117,7 +117,7 @@ server.tool(
     const check = isCommandAllowed(resolvedCommand, currentConfig);
     if (!check.allowed) {
       logger.security(`BLOCKED: ${resolvedCommand} → ${check.reason}`);
-      return toolError(check.reason, 'blocked') as any;
+      return toolError(check.reason as string, 'blocked') as any;
     }
 
     logger.info(`EXEC → ${resolvedCommand}`);
@@ -446,14 +446,18 @@ server.tool(
     name: z.string().describe("Name of the script (e.g. 'dev', 'build', 'test')"),
     args: z.string().optional().describe("Optional extra arguments to pass to the script"),
   },
-  async ({ name, args }) => {
+  async ({ name, args }, extra?: any) => {
     logger.info(`Helper called: run_script -> ${name}`);
     const pm = detectPackageManager(ROOT);
     let command = `${pm.cmd} run ${name}`;
     if (args) command += ` ${args}`;
 
     try {
-      const result = await executeCommand(command, currentConfig, { cwd: ROOT, timeout: 300000 });
+      const result = await executeCommand(command, currentConfig, { 
+        cwd: ROOT, 
+        timeout: 300000,
+        signal: extra?.signal 
+      });
       const normalized = normalizeForMcp(result, currentConfig.maxOutputBytes);
       return {
         content: [{ type: "text", text: JSON.stringify(normalized, null, 2) }],
