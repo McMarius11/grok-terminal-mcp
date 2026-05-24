@@ -431,3 +431,46 @@ export async function findFiles(
   await walk(rootPath);
   return results;
 }
+
+/**
+ * Reads multiple files at once.
+ * Returns content for each path. On error for a specific file, returns the error message instead of throwing.
+ * This is much more efficient than calling read_text_file multiple times.
+ */
+export async function readMultipleFiles(
+  paths: string[]
+): Promise<Array<{ path: string; content?: string; error?: string }>> {
+  const results = await Promise.all(
+    paths.map(async (filePath) => {
+      try {
+        const content = await fs.readFile(filePath, "utf-8");
+        return { path: filePath, content };
+      } catch (err: any) {
+        return {
+          path: filePath,
+          error: err?.message || "Failed to read file",
+        };
+      }
+    })
+  );
+
+  return results;
+}
+
+/**
+ * Reads a JSON file and parses it.
+ */
+export async function readJsonFile(filePath: string): Promise<any> {
+  const content = await fs.readFile(filePath, "utf-8");
+  return JSON.parse(content);
+}
+
+/**
+ * Writes data as pretty-printed JSON to a file.
+ */
+export async function writeJsonFile(filePath: string, data: any, pretty: boolean = true): Promise<void> {
+  const content = pretty
+    ? JSON.stringify(data, null, 2)
+    : JSON.stringify(data);
+  await fs.writeFile(filePath, content, "utf-8");
+}

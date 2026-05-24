@@ -2,8 +2,24 @@
 
 All notable changes to grok-terminal-mcp will be documented in this file.
 
-## [Unreleased / 0.6.0]
-### Added — Complete Filesystem Tooling (Full replacement path for official server-filesystem)
+## [0.6.0] - 2026-05-25
+### Added — High-Value Missing Features + Filesystem Completion
+This release focuses on closing the remaining practical gaps so grok-terminal-mcp can serve as a **near-complete single development MCP**.
+
+**New powerful tools:**
+- `http_request` — Full-featured HTTP client (any method, JSON body, headers, timeout, structured response with auto JSON parsing). Perfect for API development and testing.
+- `read_multiple_files` — Read many files in parallel (with per-file error handling).
+- `git_log` + `git_show` — Structured, AI-friendly git history and commit inspection.
+- `read_json` + `write_json` — Convenient typed JSON file handling.
+
+**Filesystem completion** (from previous work in this cycle):
+- `list_directory`, `directory_tree`, `create_directory`, `move_file`, `get_file_info`, `find_files`
+
+These additions, together with the existing terminal, process management, git, and meta-MCP capabilities, make it realistic to run with just this one MCP for most software engineering work.
+
+### Changed
+- Version bumped to 0.6.0
+- New dedicated `httpTools.ts` module
 grok-terminal-mcp now contains a complete, high-quality set of structured filesystem operations. Combined with the existing powerful terminal, git, process, and meta-MCP tools, it can serve as a **single primary development MCP** for most projects.
 
 New tools (all with clean structured JSON output):

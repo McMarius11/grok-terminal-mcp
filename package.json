@@ -1,6 +1,6 @@
 {
   "name": "grok-terminal-mcp",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Production-quality terminal MCP server for Grok (and other MCP clients). Built with the official SDK. Excellent long-running process support, smart general-purpose helpers, project shortcuts, and strong configurable security. Works with any project.",
   "type": "module",
   "main": "dist/server.js",

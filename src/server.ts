@@ -24,8 +24,13 @@ import {
   moveFile,
   getFileInfo,
   findFiles,
+  readMultipleFiles,
+  readJsonFile,
+  writeJsonFile,
   type FileEdit,
 } from "./fileTools.js";
+
+import { httpRequest } from "./httpTools.js";
 
 import {
   getBunInfo,
@@ -823,6 +828,164 @@ registerTool(
       };
     } catch (err: any) {
       return toolError(err?.message || "Failed to find files", "execution") as any;
+    }
+  }
+);
+
+// --- read_multiple_files ---
+const ReadMultipleFilesSchema = z.object({
+  paths: z.array(z.string()).describe("List of file paths to read in parallel"),
+});
+
+registerTool(
+  "read_multiple_files",
+  "Read the contents of multiple files at once. Much more efficient than calling read_text_file repeatedly. Returns content or error per file.",
+  ReadMultipleFilesSchema,
+  async (args: any) => {
+    logger.info(`Tool called: read_multiple_files (${args.paths.length} files)`);
+    try {
+      const results = await readMultipleFiles(args.paths);
+      return {
+        content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to read multiple files", "execution") as any;
+    }
+  }
+);
+
+// --- http_request ---
+const HttpRequestSchema = z.object({
+  url: z.string().describe("The URL to request"),
+  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]).optional().default("GET"),
+  headers: z.record(z.string()).optional().describe("HTTP headers as key-value object"),
+  body: z.any().optional().describe("Request body. Object will be sent as JSON."),
+  timeout: z.number().optional().default(30000).describe("Timeout in milliseconds"),
+  followRedirects: z.boolean().optional().default(true),
+});
+
+registerTool(
+  "http_request",
+  "Make an HTTP request (GET, POST, PUT, etc.). Supports JSON bodies, custom headers, and returns structured response including parsed JSON when available. Excellent for API testing and automation.",
+  HttpRequestSchema,
+  async (args: any) => {
+    logger.info(`Tool called: http_request ${args.method} ${args.url}`);
+    try {
+      const result = await httpRequest({
+        url: args.url,
+        method: args.method,
+        headers: args.headers,
+        body: args.body,
+        timeout: args.timeout,
+        followRedirects: args.followRedirects,
+      });
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "HTTP request failed", "execution") as any;
+    }
+  }
+);
+
+// --- read_json ---
+const ReadJsonSchema = z.object({
+  path: z.string().describe("Path to the JSON file"),
+});
+
+registerTool(
+  "read_json",
+  "Read and parse a JSON file. Returns the parsed object.",
+  ReadJsonSchema,
+  async (args: any) => {
+    logger.info(`Tool called: read_json -> ${args.path}`);
+    try {
+      const data = await readJsonFile(args.path);
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to read JSON file", "execution") as any;
+    }
+  }
+);
+
+// --- write_json ---
+const WriteJsonSchema = z.object({
+  path: z.string().describe("Path to write the JSON file"),
+  data: z.any().describe("Data to write (will be pretty-printed)"),
+  pretty: z.boolean().optional().default(true),
+});
+
+registerTool(
+  "write_json",
+  "Write data as formatted JSON to a file.",
+  WriteJsonSchema,
+  async (args: any) => {
+    logger.info(`Tool called: write_json -> ${args.path}`);
+    try {
+      await writeJsonFile(args.path, args.data, args.pretty);
+      return {
+        content: [{ type: "text", text: `Successfully wrote JSON to ${args.path}` }],
+      };
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to write JSON file", "execution") as any;
+    }
+  }
+);
+
+// --- git_log (structured) ---
+const GitLogSchema = z.object({
+  limit: z.number().optional().default(20).describe("Maximum number of commits to return"),
+  oneline: z.boolean().optional().default(false).describe("Return compact one-line format"),
+});
+
+registerTool(
+  "git_log",
+  "Show recent commit history in structured format. Much better than raw git log for the AI.",
+  GitLogSchema,
+  async ({ limit, oneline }, extra?: any) => {
+    logger.info("Tool called: git_log");
+    const cmd = oneline
+      ? `git log -${limit} --oneline`
+      : `git log -${limit} --pretty=format:"%H|%an|%ad|%s" --date=iso`;
+    try {
+      const result = await executeCommand(cmd, currentConfig, {
+        cwd: ROOT,
+        timeout: 30000,
+        signal: extra?.signal,
+      });
+      return {
+        content: [{ type: "text", text: result.stdout || result.stderr || "No output" }],
+      } as any;
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to get git log", "execution") as any;
+    }
+  }
+);
+
+// --- git_show ---
+const GitShowSchema = z.object({
+  ref: z.string().describe("Commit hash, tag, or ref to show (e.g. HEAD, abc123)"),
+});
+
+registerTool(
+  "git_show",
+  "Show details of a specific commit (diff + message).",
+  GitShowSchema,
+  async ({ ref }, extra?: any) => {
+    logger.info(`Tool called: git_show ${ref}`);
+    try {
+      const result = await executeCommand(`git show ${ref}`, currentConfig, {
+        cwd: ROOT,
+        timeout: 60000,
+        signal: extra?.signal,
+      });
+      return {
+        content: [{ type: "text", text: result.stdout || result.stderr }],
+      } as any;
+    } catch (err: any) {
+      return toolError(err?.message || "Failed to show commit", "execution") as any;
     }
   }
 );
