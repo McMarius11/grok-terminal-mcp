@@ -28,6 +28,18 @@ Most existing terminal MCP servers have one or more of these problems:
 
 It started as a stable terminal replacement but has evolved into a general-purpose development MCP that can handle the majority of day-to-day software engineering tasks on its own.
 
+## Why grok-terminal-mcp instead of the alternatives?
+
+| MCP                            | Terminal | Filesystem Tools | HTTP Client | Long-running Processes | Stability with Grok | Config Flexibility | Notes |
+|--------------------------------|----------|------------------|-------------|------------------------|---------------------|--------------------|-------|
+| **grok-terminal-mcp**          | Excellent | Excellent       | Excellent   | Excellent             | Very good           | Very high          | One tool for most needs |
+| desktop-commander              | Good     | Good             | None        | Good                  | Mixed               | Low                | Popular but sometimes unstable |
+| mcp-server-terminal            | Good     | Weak             | None        | Weak                  | Poor                | Low                | Often has handshake issues |
+| Official Filesystem MCP        | None     | Excellent        | None        | None                  | Good                | Medium             | Only filesystem, nothing else |
+| Others                         | Varies   | Varies           | Rare        | Varies                | Varies              | Varies             | Usually specialized |
+
+**grok-terminal-mcp** tries to be the "one MCP you actually need" for real development work instead of juggling 2–3 different servers.
+
 ## Quick Start
 
 ### Standalone Use (Recommended for most people)
@@ -44,7 +56,7 @@ command = "node"
 args = ["/absolute/path/to/your/project/tools/grok-terminal-mcp/dist/server.js"]
 ```
 
-See [STANDALONE.md](./STANDALONE.md) and [QUICKSTART.md](./QUICKSTART.md) for detailed instructions.
+See [STANDALONE.md](./STANDALONE.md), [QUICKSTART.md](./QUICKSTART.md), and [MIGRATION.md](./MIGRATION.md) for detailed instructions and migration help from other MCPs.
 
 ## CLI
 
