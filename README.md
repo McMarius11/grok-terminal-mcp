@@ -6,7 +6,7 @@ Works great with **any project** — not just one specific one.
 
 It is designed to be reliable, practical, and safe for real development work, with:
 - Strong support for long-running processes
-- Useful built-in general helpers (`git_status`, `run_script`, `list_scripts`, `project_info`)
+- Useful built-in general helpers + structured file tools (`edit_file` with diff preview, `search_files`, etc.)
 - Project-specific shortcuts via simple config
 
 ## Why This Exists
@@ -76,6 +76,11 @@ npm run dev -- --debug
 | `run_script`            | Run package.json scripts (auto npm/yarn/pnpm/bun)                        |
 | `deps_outdated`         | Show outdated dependencies using the project's package manager           |
 | `project_info`          | Quick project overview (name, version, git, node, package manager...)    |
+| **Structured file tools** (inspired by official Filesystem MCP) | |
+| `read_text_file`        | Read file content with optional head/tail                                |
+| `write_file`            | Write/overwrite a file                                                   |
+| `edit_file`             | Precise multi-edit with `dryRun` diff preview (recommended for edits)    |
+| `search_files`          | Recursive content search with exclude patterns                           |
 | **Project-specific** (via shortcuts in .grok-terminal.json) | |
 | `run_build` / `run_check_fast` / etc. | Whatever you define in your config |
 

@@ -12,10 +12,17 @@ All notable changes to grok-terminal-mcp will be documented in this file.
   - `run_script` (auto-detects npm/yarn/pnpm/bun)
   - `deps_outdated`
   - `project_info`
-- Improved tool call cancellation support (signal forwarding across most tools)
+- **Structured file tools** (inspired by the official Filesystem MCP, to reduce need for separate MCPs):
+  - `read_text_file` (with head/tail support)
+  - `write_file`
+  - `edit_file` (with `dryRun` + unified diff preview)
+  - `search_files`
+- Centralized `registerTool` helper for cleaner tool registration (reduces scattered `as any` casts)
+- Improved tool call cancellation support (signal forwarding across most tools, including new file tools)
 - Real working `reload_config` implementation
 - `cancelled` flag in responses
 - `.grok-terminal.example.json` for easy onboarding
+- Significantly improved test coverage (now 29 tests, including file tools + cancellation)
 
 ### Changed
 - Better output truncation with head+tail + clear `truncated` + `totalBytes` information
